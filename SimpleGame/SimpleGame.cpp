@@ -9,81 +9,74 @@ but WITHOUT ANY WARRANTY.
 */
 
 #include "stdafx.h"
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include "Dependencies/glew.h"
+#include "Dependencies/freeglut.h"
+#include "TutorialGame.h"
 #include <iostream>
-#include "Dependencies\glew.h"
-#include "Dependencies\freeglut.h"
+#include <memory>
 
-#include "Renderer.h"
-
-Renderer *g_Renderer = NULL;
-
-void RenderScene(void)
+namespace
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
+    std::unique_ptr<TutorialGame> game;
+    int previousTick = 0;
+    HWND gameWindow = nullptr;
 
-	// Renderer Test
-	g_Renderer->DrawSolidRect(0, 0, 0, 4, 1, 0, 1, 1);
-
-	glutSwapBuffers();
+    void RenderScene()
+    {
+        if (!game) return;
+        game->Render();
+        glutSwapBuffers();
+    }
+    void Tick(int)
+    {
+        if (!game) return;
+        int now = glutGet(GLUT_ELAPSED_TIME);
+        float dt = (now - previousTick) / 1000.f;
+        previousTick = now;
+        if (GetForegroundWindow() != gameWindow) game->ClearKeys();
+        game->Update(dt);
+        if (game->WantsQuit()) { glutLeaveMainLoop(); return; }
+        glutPostRedisplay();
+        glutTimerFunc(16, Tick, 0);
+    }
+    void Resize(int w, int h) { if (game) game->Resize(w, h); }
+    void KeyDown(unsigned char key, int, int) { if (game) game->KeyDown(key); }
+    void KeyUp(unsigned char key, int, int) { if (game) game->KeyUp(key); }
+    // Release GPU/font resources while the window's OpenGL context is still alive.
+    void Close() { game.reset(); }
 }
 
-void Idle(void)
+int main(int argc, char** argv)
 {
-	RenderScene();
-}
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
+    // Renderer uses compatibility drawing plus optional framebuffer post-processing.
+    glutInitContextVersion(2, 1);
+    glutInitWindowSize(1280, 800);
+    glutCreateWindow("SimpleGame - Village of Echoes / Tutorial");
+    glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
+    if (glewInit() != GLEW_OK || !GLEW_VERSION_2_1)
+    {
+        std::cerr << "OpenGL 2.1 compatibility support is required.\n";
+        glutDestroyWindow(glutGetWindow());
+        return 1;
+    }
 
-void MouseInput(int button, int state, int x, int y)
-{
-	RenderScene();
-}
-
-void KeyInput(unsigned char key, int x, int y)
-{
-	RenderScene();
-}
-
-void SpecialKeyInput(int key, int x, int y)
-{
-	RenderScene();
-}
-
-int main(int argc, char **argv)
-{
-	// Initialize GL things
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
-	glutInitWindowPosition(0, 0);
-	glutInitWindowSize(500, 500);
-	glutCreateWindow("Game Software Engineering KPU");
-
-	glewInit();
-	if (glewIsSupported("GL_VERSION_3_0"))
-	{
-		std::cout << " GLEW Version is 3.0\n ";
-	}
-	else
-	{
-		std::cout << "GLEW 3.0 not supported\n ";
-	}
-
-	// Initialize Renderer
-	g_Renderer = new Renderer(500, 500);
-	if (!g_Renderer->IsInitialized())
-	{
-		std::cout << "Renderer could not be initialized.. \n";
-	}
-
-	glutDisplayFunc(RenderScene);
-	glutIdleFunc(Idle);
-	glutKeyboardFunc(KeyInput);
-	glutMouseFunc(MouseInput);
-	glutSpecialFunc(SpecialKeyInput);
-
-	glutMainLoop();
-
-	delete g_Renderer;
-
+    gameWindow = WindowFromDC(wglGetCurrentDC());
+    game.reset(new TutorialGame);
+    glutDisplayFunc(RenderScene);
+    glutReshapeFunc(Resize);
+    glutKeyboardFunc(KeyDown);
+    glutKeyboardUpFunc(KeyUp);
+    glutCloseFunc(Close);
+    glutIgnoreKeyRepeat(1);
+    game->Resize(1280, 800);
+    previousTick = glutGet(GLUT_ELAPSED_TIME);
+    glutTimerFunc(16, Tick, 0);
+    glutMainLoop();
     return 0;
 }
 

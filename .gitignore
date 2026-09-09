@@ -1,0 +1,14 @@
+# Visual Studio local caches (not project sources or runtime dependencies)
+/.vs/
+**/ipch/
+*.ipch
+/SimpleGame/x64/
+*.exe
+*.obj
+*.pch
+*.pdb
+*.idb
+*.ilk
+*.tlog
+*.log
+*.lastbuildstate
