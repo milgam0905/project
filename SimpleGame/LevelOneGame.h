@@ -1,14 +1,13 @@
 #pragma once
 
-#include <memory>
 #include "GameMode.h"
+#include <memory>
 
-// Small, self-contained tutorial. Owns world, quest state and prototype drawing.
-class TutorialGame : public GameMode
+class LevelOneGame : public GameMode
 {
   public:
-    TutorialGame();
-    ~TutorialGame() override;
+    LevelOneGame();
+    ~LevelOneGame() override;
     void Resize(int width, int height) override;
     void Update(float dt) override;
     void Render() override;

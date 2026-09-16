@@ -19,6 +19,7 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\TUTORIAL_LEVEL_DESIGN.txt" />
+    <Text Include="..\LEVEL_ONE_DESIGN.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -36,6 +37,13 @@
     <ClInclude Include="WorldGeometry.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="AssetCache.h"><Filter>헤더 파일</Filter></ClInclude>
+    <ClInclude Include="GameMode.h"><Filter>헤더 파일</Filter></ClInclude>
+    <ClInclude Include="LevelOneGame.h"><Filter>헤더 파일</Filter></ClInclude>
+    <ClInclude Include="LevelOneMap.h"><Filter>헤더 파일</Filter></ClInclude>
+    <ClInclude Include="RpgStats.h"><Filter>헤더 파일</Filter></ClInclude>
+    <ClInclude Include="UiText.h"><Filter>헤더 파일</Filter></ClInclude>
+    <ClInclude Include="EffectShaders.h"><Filter>헤더 파일</Filter></ClInclude>
     <ClInclude Include="TutorialGame.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -56,6 +64,9 @@
     <ClCompile Include="RenderAssets.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="AssetCache.cpp"><Filter>소스 파일</Filter></ClCompile>
+    <ClCompile Include="LevelOneMap.cpp"><Filter>소스 파일</Filter></ClCompile>
+    <ClCompile Include="LevelOneGame.cpp"><Filter>소스 파일</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\SolidRect.fs">
