@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "Profiler.h"
 #include "LevelOneMap.h"
 #include <algorithm>
 #include <cmath>
@@ -13,6 +14,7 @@ namespace
 
 LevelOneMap::LevelOneMap(std::uint32_t value) : seed(value)
 {
+    Profiler::Scope profile("world.map_generation");
     cells.fill(Tile::Ground);
     std::mt19937 random(seed);
     const RenderPoint camp = Camp();
@@ -99,6 +101,7 @@ bool LevelOneMap::Ground(int x, int y) const
 
 bool LevelOneMap::Walkable(RenderPoint p) const
 {
+    Profiler::Count("collision.walkable_queries");
     // Player/monster clearance. Four-neighbour cell-centre routes always fit this radius.
     const float radius = .20f;
     for (int y = -1; y <= 1; ++y)
@@ -118,6 +121,7 @@ bool LevelOneMap::Walkable(RenderPoint p) const
 
 bool LevelOneMap::Connected() const
 {
+    Profiler::Scope profile("navigation.connectivity");
     std::array<bool, Width * Height> visited = {};
     std::queue<int> frontier;
     const int start = static_cast<int>(Camp().y) * Width + static_cast<int>(Camp().x);
@@ -157,6 +161,7 @@ bool LevelOneMap::Connected() const
 
 bool LevelOneMap::ClearSegment(RenderPoint from, RenderPoint to) const
 {
+    Profiler::Count("navigation.segment_queries");
     float distance = std::hypot(to.x - from.x, to.y - from.y);
     int samples = std::max(1, static_cast<int>(std::ceil(distance / .12f)));
     for (int i = 0; i <= samples; ++i)
@@ -173,6 +178,7 @@ bool LevelOneMap::ClearSegment(RenderPoint from, RenderPoint to) const
 
 RenderPoint LevelOneMap::NextStep(RenderPoint from, RenderPoint to) const
 {
+    Profiler::Scope profile("navigation.pathfind");
     if (ClearSegment(from, to))
     {
         return to;

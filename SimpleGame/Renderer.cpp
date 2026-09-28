@@ -3,6 +3,9 @@
 #define NOMINMAX
 #endif
 #include "Renderer.h"
+#include "RenderStats.h"
+#include "RenderQueue.h"
+#include "Profiler.h"
 #include "RenderAssets.h"
 #include "WorldGeometry.h"
 #include "LevelOneMap.h"
@@ -18,6 +21,26 @@ namespace
     using Col = RenderColor;
     const float W = 1280.f, H = 800.f, Pi = WorldGeometry::Pi;
 
+    // Terrain vertices remain map-local; the actor supplies the batch transform.
+    class TerrainProjection
+    {
+      public:
+        TerrainProjection(P& camera, P origin, float elevation) : camera(camera), previous(camera)
+        {
+            const P offset = WorldGeometry::Project(origin);
+            camera = {camera.x - offset.x, camera.y - offset.y + elevation};
+        }
+
+        ~TerrainProjection()
+        {
+            camera = previous;
+        }
+
+      private:
+        P& camera;
+        P previous;
+    };
+
     Col C(float r, float g, float b, float a = 1)
     {
         return {r, g, b, a};
@@ -25,18 +48,18 @@ namespace
 
     void Color(Col c)
     {
-        glColor4f(c.r, c.g, c.b, c.a);
+        RenderQueue::Color(c.r, c.g, c.b, c.a);
     }
 
     void Quad(P a, P b, P c, P d, Col color)
     {
         Color(color);
-        glBegin(GL_QUADS);
-        glVertex2f(a.x, a.y);
-        glVertex2f(b.x, b.y);
-        glVertex2f(c.x, c.y);
-        glVertex2f(d.x, d.y);
-        glEnd();
+        RenderQueue::Begin(GL_QUADS);
+        RenderQueue::Vertex(a.x, a.y);
+        RenderQueue::Vertex(b.x, b.y);
+        RenderQueue::Vertex(c.x, c.y);
+        RenderQueue::Vertex(d.x, d.y);
+        RenderQueue::End();
     }
 
     void Rect(float x, float y, float w, float h, Col c)
@@ -46,9 +69,9 @@ namespace
 
     void Ellipse(P p, float rx, float ry, Col color, bool feather = false)
     {
-        glBegin(GL_TRIANGLE_FAN);
+        RenderQueue::Begin(GL_TRIANGLE_FAN);
         Color(color);
-        glVertex2f(p.x, p.y);
+        RenderQueue::Vertex(p.x, p.y);
         if (feather)
         {
             Color(C(color.r, color.g, color.b, 0));
@@ -57,37 +80,37 @@ namespace
         for (int i = 0; i <= 48; ++i)
         {
             float a = i * Pi / 24.f;
-            glVertex2f(p.x + std::cos(a) * rx, p.y + std::sin(a) * ry);
+            RenderQueue::Vertex(p.x + std::cos(a) * rx, p.y + std::sin(a) * ry);
         }
 
-        glEnd();
+        RenderQueue::End();
     }
 
     void Stroke(P a, P b, Col color)
     {
         Color(color);
-        glBegin(GL_LINES);
-        glVertex2f(a.x, a.y);
-        glVertex2f(b.x, b.y);
-        glEnd();
+        RenderQueue::Begin(GL_LINES);
+        RenderQueue::Vertex(a.x, a.y);
+        RenderQueue::Vertex(b.x, b.y);
+        RenderQueue::End();
     }
 
     void TexturedQuad(GLuint texture, P a, P b, P c, P d, float repeatX, float repeatY, Col color)
     {
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, texture);
+        RenderQueue::EnableTexture(true);
+        RenderQueue::Texture(texture);
         Color(color);
-        glBegin(GL_QUADS);
-        glTexCoord2f(0, 0);
-        glVertex2f(a.x, a.y);
-        glTexCoord2f(repeatX, 0);
-        glVertex2f(b.x, b.y);
-        glTexCoord2f(repeatX, repeatY);
-        glVertex2f(c.x, c.y);
-        glTexCoord2f(0, repeatY);
-        glVertex2f(d.x, d.y);
-        glEnd();
-        glDisable(GL_TEXTURE_2D);
+        RenderQueue::Begin(GL_QUADS);
+        RenderQueue::TexCoord(0, 0);
+        RenderQueue::Vertex(a.x, a.y);
+        RenderQueue::TexCoord(repeatX, 0);
+        RenderQueue::Vertex(b.x, b.y);
+        RenderQueue::TexCoord(repeatX, repeatY);
+        RenderQueue::Vertex(c.x, c.y);
+        RenderQueue::TexCoord(0, repeatY);
+        RenderQueue::Vertex(d.x, d.y);
+        RenderQueue::End();
+        RenderQueue::EnableTexture(false);
     }
 
     void Canvas()
@@ -101,8 +124,8 @@ namespace
 
     void Fullscreen()
     {
-        Color(C(1, 1, 1));
-        glBegin(GL_QUADS);
+        glColor4f(1, 1, 1, 1);
+        RenderStats::BeginPrimitive(GL_QUADS);
         glTexCoord2f(0, 1);
         glVertex2f(0, 0);
         glTexCoord2f(1, 1);
@@ -114,8 +137,44 @@ namespace
         glEnd();
     }
 
+    void AppendWater(const std::vector<P>& boundary,
+                     std::vector<RenderQueue::VertexData>& vertices,
+                     std::vector<GLuint>& indices)
+    {
+        if (boundary.size() < 3)
+        {
+            return;
+        }
+        P center = {0, 0};
+        for (P point : boundary)
+        {
+            center.x += point.x;
+            center.y += point.y;
+        }
+        center.x /= static_cast<float>(boundary.size());
+        center.y /= static_cast<float>(boundary.size());
+        const GLuint base = static_cast<GLuint>(vertices.size());
+        auto append = [&](P point)
+        {
+            const P projected = WorldGeometry::Project(point);
+            vertices.push_back({projected.x, projected.y, point.x, point.y, .08f, .22f, .24f, 1});
+        };
+        append(center);
+        for (P point : boundary)
+        {
+            append(point);
+        }
+        for (size_t i = 0; i < boundary.size(); ++i)
+        {
+            indices.push_back(base);
+            indices.push_back(base + 1 + static_cast<GLuint>(i));
+            indices.push_back(base + 1 + static_cast<GLuint>((i + 1) % boundary.size()));
+        }
+    }
+
     GLuint Program(const char* fragment)
     {
+        Profiler::Scope profile("render.shader_compile");
         const char* vertex =
             "#version 120\nvarying vec2 uv;\nvoid main(){gl_Position=ftransform(); "
             "uv=gl_MultiTexCoord0.xy;}\n";
@@ -129,6 +188,7 @@ namespace
             glGetShaderiv(shaders[i], GL_COMPILE_STATUS, &ok);
             if (!ok)
             {
+                Profiler::Count("render.shader_compile_failures");
                 char log[2048] = {};
                 glGetShaderInfoLog(shaders[i], 2048, nullptr, log);
                 std::cerr << "Renderer shader: " << log << "\n";
@@ -214,9 +274,17 @@ struct Renderer::Impl
     int windowW = 1280, windowH = 800;
     P camera = {0, 0};
     float time = 0;
+    RenderQueue::StaticMesh lakeMesh, huntingWater;
+    std::vector<P> lakeBoundary, cachedBoundary;
+    GLuint minimap = 0;
+    bool huntingPrepared = false;
+    GLint waterTime = -1, fireTime = -1, fireMystical = -1;
+    GLint blurSource = -1, blurStep = -1, blurExtract = -1;
+    GLint compositeScene = -1, compositeBloom = -1, compositeTexel = -1;
 
     Impl()
     {
+        Profiler::Scope profile("render.initialize");
         for (int i = 0; i < RenderAssets::MaterialCount; ++i)
         {
             materials[i] = RenderAssets::MakeMaterial(static_cast<RenderAssets::Material>(i));
@@ -226,16 +294,36 @@ struct Renderer::Impl
         modelAtlas = RenderAssets::MakeModelAtlas();
         fireProgram = Program(EffectShaders::Fire);
         waterProgram = Program(EffectShaders::Water);
+        waterTime = waterProgram ? glGetUniformLocation(waterProgram, "uTime") : -1;
+        fireTime = fireProgram ? glGetUniformLocation(fireProgram, "uTime") : -1;
+        fireMystical = fireProgram ? glGetUniformLocation(fireProgram, "uMystical") : -1;
+        for (int i = 0; i < 192; ++i)
+        {
+            lakeBoundary.push_back(WorldGeometry::LakeEdge(i * 2 * Pi / 192.f));
+        }
         if (GLEW_VERSION_3_0 || GLEW_ARB_framebuffer_object)
         {
             blur = Program(BlurFragment);
             composite = Program(CompositeFragment);
+            if (blur)
+            {
+                blurSource = glGetUniformLocation(blur, "source");
+                blurStep = glGetUniformLocation(blur, "stepUV");
+                blurExtract = glGetUniformLocation(blur, "extractLight");
+            }
+            if (composite)
+            {
+                compositeScene = glGetUniformLocation(composite, "scene");
+                compositeBloom = glGetUniformLocation(composite, "bloom");
+                compositeTexel = glGetUniformLocation(composite, "texel");
+            }
             post = blur && composite && Target(sceneFbo, sceneTexture, 1280, 800) &&
                    Target(bloomFbo[0], bloomTexture[0], 640, 400) &&
                    Target(bloomFbo[1], bloomTexture[1], 640, 400);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 
+        Profiler::Gauge("render.postprocess_enabled", post ? 1 : 0);
         if (!post)
         {
             std::cerr << "Post-processing unavailable; direct world rendering enabled.\n";
@@ -244,6 +332,8 @@ struct Renderer::Impl
 
     ~Impl()
     {
+        RenderQueue::Flush();
+        glDeleteTextures(1, &minimap);
         glDeleteTextures(RenderAssets::MaterialCount, materials);
         glDeleteTextures(1, &atlas);
         glDeleteTextures(1, &modelAtlas);
@@ -282,6 +372,22 @@ struct Renderer::Impl
         glDeleteTextures(2, bloomTexture);
     }
 
+    void DrawWater(const RenderQueue::StaticMesh& mesh)
+    {
+        Profiler::Scope profile("render.water");
+        RenderQueue::EnableTexture(false);
+        RenderQueue::Program(waterProgram);
+        if (waterProgram)
+        {
+            glUniform1f(waterTime, time);
+        }
+        RenderQueue::PushMatrix();
+        RenderQueue::Translate(640.f - camera.x, 420.f - camera.y, 0);
+        mesh.Draw();
+        RenderQueue::PopMatrix();
+        RenderQueue::Program(0);
+    }
+
     bool Target(GLuint& fbo, GLuint& texture, int w, int h)
     {
         glGenTextures(1, &texture);
@@ -313,12 +419,12 @@ struct Renderer::Impl
     void Path(P a, P b, P c, P d, float width)
     {
         // Curved, feathered ribbon. UVs follow arc length rather than tile edges.
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, materials[RenderAssets::Dirt]);
+        RenderQueue::EnableTexture(true);
+        RenderQueue::Texture(materials[RenderAssets::Dirt]);
         const int segments = 80;
         for (int band = 0; band < 3; ++band)
         {
-            glBegin(GL_TRIANGLE_STRIP);
+            RenderQueue::Begin(GL_TRIANGLE_STRIP);
             float distance = 0;
             P previous = a;
             for (int i = 0; i <= segments; ++i)
@@ -343,31 +449,31 @@ struct Renderer::Impl
                 {
                     P p = Screen({q.x - dy / len * offsets[k], q.y + dx / len * offsets[k]});
                     Color(C(.78f, .76f, .68f, alpha[k]));
-                    glTexCoord2f(distance * .5f, (offsets[k] + width) * .65f);
-                    glVertex2f(p.x, p.y);
+                    RenderQueue::TexCoord(distance * .5f, (offsets[k] + width) * .65f);
+                    RenderQueue::Vertex(p.x, p.y);
                 }
             }
 
-            glEnd();
+            RenderQueue::End();
         }
 
-        glDisable(GL_TEXTURE_2D);
+        RenderQueue::EnableTexture(false);
     }
 
     void Lake(float expansion, Col center, Col edge)
     {
-        glBegin(GL_TRIANGLE_FAN);
+        RenderQueue::Begin(GL_TRIANGLE_FAN);
         P p = Screen({11, -6});
         Color(center);
-        glVertex2f(p.x, p.y);
+        RenderQueue::Vertex(p.x, p.y);
         Color(edge);
         for (int i = 0; i <= 192; ++i)
         {
             p = Screen(WorldGeometry::LakeEdge(i * 2 * Pi / 192.f, expansion));
-            glVertex2f(p.x, p.y);
+            RenderQueue::Vertex(p.x, p.y);
         }
 
-        glEnd();
+        RenderQueue::End();
     }
 };
 
@@ -397,6 +503,7 @@ void Renderer::Resize(int w, int h)
 
 void Renderer::BeginScene(P camera, float time)
 {
+    RenderQueue::ResetState();
     m->camera = camera;
     m->time = time;
     if (m->post)
@@ -421,8 +528,10 @@ void Renderer::BeginScene(P camera, float time)
     Canvas();
 }
 
-void Renderer::DrawTerrain()
+void Renderer::DrawTerrain(P origin, float elevation)
 {
+    TerrainProjection projection(m->camera, origin, elevation);
+
     TexturedQuad(m->materials[RenderAssets::Grass],
                  m->Screen({-28, -26}),
                  m->Screen({28, -26}),
@@ -467,12 +576,7 @@ void Renderer::DrawTerrain()
 
     m->Lake(.13f, C(.20f, .23f, .18f), C(.25f, .27f, .19f));
     m->Lake(.055f, C(.12f, .18f, .16f), C(.16f, .23f, .21f));
-    std::vector<P> waterBoundary;
-    for (int i = 0; i < 192; ++i)
-    {
-        waterBoundary.push_back(WorldGeometry::LakeEdge(i * 2 * Pi / 192.f));
-    }
-    DrawWaterPolygon(waterBoundary);
+    DrawWaterPolygon(m->lakeBoundary);
 
     for (int i = 0; i < 75; ++i)
     {
@@ -513,47 +617,129 @@ void Renderer::DrawShadow(P p, float width, float height)
     Ellipse(p, width, width * .30f, C(.008f, .018f, .02f, .50f), true);
 }
 
-void Renderer::DrawWaterPolygon(const std::vector<P>& worldPoints)
+void Renderer::DrawWaterPolygon(const std::vector<P>& boundary)
 {
-    if (worldPoints.size() < 3)
+    if (boundary.size() < 3)
     {
         return;
     }
-
-    glUseProgram(m->waterProgram);
-    if (m->waterProgram)
+    const bool same = boundary.size() == m->cachedBoundary.size() &&
+                      std::equal(boundary.begin(),
+                                 boundary.end(),
+                                 m->cachedBoundary.begin(),
+                                 [](P a, P b)
+                                 {
+                                     return a.x == b.x && a.y == b.y;
+                                 });
+    if (!same)
     {
-        glUniform1f(glGetUniformLocation(m->waterProgram, "uTime"), m->time);
+        Profiler::Scope profile("cache.lake_mesh_build");
+        std::vector<RenderQueue::VertexData> vertices;
+        std::vector<GLuint> indices;
+        AppendWater(boundary, vertices, indices);
+        m->lakeMesh.Upload(vertices, indices);
+        m->cachedBoundary = boundary;
+        Profiler::Count("cache.lake_mesh_rebuilds");
     }
-
-    P center = {0, 0};
-    for (P p : worldPoints)
-    {
-        center.x += p.x;
-        center.y += p.y;
-    }
-    center.x /= static_cast<float>(worldPoints.size());
-    center.y /= static_cast<float>(worldPoints.size());
-    Color(C(.08f, .22f, .24f));
-    glBegin(GL_TRIANGLE_FAN);
-    auto vertex = [&](P world)
-    {
-        P p = m->Screen(world);
-        glTexCoord2f(world.x, world.y);
-        glVertex2f(p.x, p.y);
-    };
-    vertex(center);
-    for (P p : worldPoints)
-    {
-        vertex(p);
-    }
-    vertex(worldPoints.front());
-    glEnd();
-    glUseProgram(0);
+    m->DrawWater(m->lakeMesh);
 }
 
-void Renderer::DrawHuntingTerrain(const LevelOneMap& map)
+void Renderer::PrepareHuntingMap(const LevelOneMap& map)
 {
+    Profiler::Scope profile("cache.hunting_map_build");
+    RenderQueue::Flush();
+    std::vector<RenderQueue::VertexData> vertices;
+    std::vector<GLuint> indices;
+    std::vector<unsigned char> pixels(LevelOneMap::Width * LevelOneMap::Height * 4);
+    for (int y = 0; y < LevelOneMap::Height; ++y)
+    {
+        for (int x = 0; x < LevelOneMap::Width; ++x)
+        {
+            const auto tile = map.At(x, y);
+            const Col color = tile == LevelOneMap::Tile::Ground  ? C(.20f, .28f, .23f)
+                              : tile == LevelOneMap::Tile::Water ? C(.12f, .31f, .37f)
+                                                                 : C(.09f, .14f, .12f);
+            const size_t offset = (y * LevelOneMap::Width + x) * 4;
+            pixels[offset] = static_cast<unsigned char>(color.r * 255);
+            pixels[offset + 1] = static_cast<unsigned char>(color.g * 255);
+            pixels[offset + 2] = static_cast<unsigned char>(color.b * 255);
+            pixels[offset + 3] = 255;
+            if (tile != LevelOneMap::Tile::Water)
+            {
+                continue;
+            }
+            auto dry = [&](int px, int py)
+            {
+                return map.At(px, py) != LevelOneMap::Tile::Water;
+            };
+            float tl = dry(x - 1, y) && dry(x, y - 1) ? .22f : 0.f;
+            float tr = dry(x + 1, y) && dry(x, y - 1) ? .22f : 0.f;
+            float br = dry(x + 1, y) && dry(x, y + 1) ? .22f : 0.f;
+            float bl = dry(x - 1, y) && dry(x, y + 1) ? .22f : 0.f;
+            float fx = static_cast<float>(x), fy = static_cast<float>(y);
+            AppendWater({{fx + tl, fy},
+                         {fx + 1 - tr, fy},
+                         {fx + 1, fy + tr},
+                         {fx + 1, fy + 1 - br},
+                         {fx + 1 - br, fy + 1},
+                         {fx + bl, fy + 1},
+                         {fx, fy + 1 - bl},
+                         {fx, fy + tl}},
+                        vertices,
+                        indices);
+        }
+    }
+    m->huntingWater.Upload(vertices, indices);
+    Profiler::Gauge("cache.hunting_water_bytes",
+                    static_cast<double>(vertices.size() * sizeof(RenderQueue::VertexData) +
+                                        indices.size() * sizeof(GLuint)));
+    if (!m->minimap)
+    {
+        glGenTextures(1, &m->minimap);
+    }
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m->minimap);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexImage2D(GL_TEXTURE_2D,
+                 0,
+                 GL_RGBA8,
+                 LevelOneMap::Width,
+                 LevelOneMap::Height,
+                 0,
+                 GL_RGBA,
+                 GL_UNSIGNED_BYTE,
+                 pixels.data());
+    m->huntingPrepared = true;
+    Profiler::Count("cache.hunting_map_rebuilds");
+    Profiler::Count("upload.texture_bytes", pixels.size());
+    Profiler::Gauge("world.map_seed", map.Seed());
+    Profiler::Gauge("world.water_indices", static_cast<double>(indices.size()));
+}
+
+void Renderer::DrawMinimap(float x, float y, float width, float height)
+{
+    Profiler::Scope profile("render.minimap");
+    TexturedQuad(m->minimap,
+                 {x, y},
+                 {x + width, y},
+                 {x + width, y + height},
+                 {x, y + height},
+                 1,
+                 1,
+                 C(1, 1, 1));
+}
+
+void Renderer::DrawHuntingTerrain(const LevelOneMap& map, P origin, float elevation)
+{
+    if (!m->huntingPrepared)
+    {
+        PrepareHuntingMap(map);
+    }
+    TerrainProjection projection(m->camera, origin, elevation);
+
     const float width = static_cast<float>(LevelOneMap::Width);
     const float height = static_cast<float>(LevelOneMap::Height);
     TexturedQuad(m->materials[RenderAssets::Grass],
@@ -566,54 +752,26 @@ void Renderer::DrawHuntingTerrain(const LevelOneMap& map)
                  C(.73f, .83f, .75f));
 
     P camp = LevelOneMap::Camp();
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, m->materials[RenderAssets::Dirt]);
-    glBegin(GL_TRIANGLE_FAN);
+    RenderQueue::EnableTexture(true);
+    RenderQueue::Texture(m->materials[RenderAssets::Dirt]);
+    RenderQueue::Begin(GL_TRIANGLE_FAN);
     Color(C(.85f, .82f, .72f));
     P center = m->Screen(camp);
-    glTexCoord2f(0, 0);
-    glVertex2f(center.x, center.y);
+    RenderQueue::TexCoord(0, 0);
+    RenderQueue::Vertex(center.x, center.y);
     for (int i = 0; i <= 64; ++i)
     {
         float angle = i * 2 * Pi / 64.f;
         float radius = 2.8f + std::sin(angle * 3) * .23f;
         P offset = {std::cos(angle) * radius, std::sin(angle) * radius};
         P p = m->Screen({camp.x + offset.x, camp.y + offset.y});
-        glTexCoord2f(offset.x * .6f, offset.y * .6f);
-        glVertex2f(p.x, p.y);
+        RenderQueue::TexCoord(offset.x * .6f, offset.y * .6f);
+        RenderQueue::Vertex(p.x, p.y);
     }
-    glEnd();
-    glDisable(GL_TEXTURE_2D);
+    RenderQueue::End();
+    RenderQueue::EnableTexture(false);
 
-    for (int y = 0; y < LevelOneMap::Height; ++y)
-    {
-        for (int x = 0; x < LevelOneMap::Width; ++x)
-        {
-            if (map.At(x, y) != LevelOneMap::Tile::Water)
-            {
-                continue;
-            }
-            P screen = m->Screen({x + .5f, y + .5f});
-            if (screen.x < -100 || screen.x > 1380 || screen.y < -80 || screen.y > 880)
-            {
-                continue;
-            }
-            auto dry = [&](int px, int py) { return map.At(px, py) != LevelOneMap::Tile::Water; };
-            float tl = dry(x - 1, y) && dry(x, y - 1) ? .22f : 0.f;
-            float tr = dry(x + 1, y) && dry(x, y - 1) ? .22f : 0.f;
-            float br = dry(x + 1, y) && dry(x, y + 1) ? .22f : 0.f;
-            float bl = dry(x - 1, y) && dry(x, y + 1) ? .22f : 0.f;
-            float fx = static_cast<float>(x), fy = static_cast<float>(y);
-            DrawWaterPolygon({{fx + tl, fy},
-                              {fx + 1 - tr, fy},
-                              {fx + 1, fy + tr},
-                              {fx + 1, fy + 1 - br},
-                              {fx + 1 - br, fy + 1},
-                              {fx + bl, fy + 1},
-                              {fx, fy + 1 - bl},
-                              {fx, fy + tl}});
-        }
-    }
+    m->DrawWater(m->huntingWater);
 }
 
 void Renderer::DrawCachedModel(P p, int model, int frame, float facing, float opacity)
@@ -633,27 +791,29 @@ void Renderer::DrawCachedModel(P p, int model, int frame, float facing, float op
     {
         std::swap(u0, u1);
     }
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, m->modelAtlas);
+    RenderQueue::EnableTexture(true);
+    RenderQueue::Texture(m->modelAtlas);
     Color(C(1, 1, 1, opacity));
-    glBegin(GL_QUADS);
-    glTexCoord2f(u0, v0);
-    glVertex2f(p.x - width * .5f, p.y - height * .875f);
-    glTexCoord2f(u1, v0);
-    glVertex2f(p.x + width * .5f, p.y - height * .875f);
-    glTexCoord2f(u1, v1);
-    glVertex2f(p.x + width * .5f, p.y + height * .125f);
-    glTexCoord2f(u0, v1);
-    glVertex2f(p.x - width * .5f, p.y + height * .125f);
-    glEnd();
-    glDisable(GL_TEXTURE_2D);
+    RenderQueue::Begin(GL_QUADS);
+    RenderQueue::TexCoord(u0, v0);
+    RenderQueue::Vertex(p.x - width * .5f, p.y - height * .875f);
+    RenderQueue::TexCoord(u1, v0);
+    RenderQueue::Vertex(p.x + width * .5f, p.y - height * .875f);
+    RenderQueue::TexCoord(u1, v1);
+    RenderQueue::Vertex(p.x + width * .5f, p.y + height * .125f);
+    RenderQueue::TexCoord(u0, v1);
+    RenderQueue::Vertex(p.x - width * .5f, p.y + height * .125f);
+    RenderQueue::End();
+    RenderQueue::EnableTexture(false);
 }
 
 void Renderer::DrawHouse(P p, int variant, float a)
 {
     using namespace RenderAssets;
     auto material = [&](Material id, P x, P y, P z, P w, float u, float v, Col tint)
-    { TexturedQuad(m->materials[id], x, y, z, w, u, v, tint); };
+    {
+        TexturedQuad(m->materials[id], x, y, z, w, u, v, tint);
+    };
     // Stone foundation, lime plaster walls, timber framing and weathered roof shingles.
     material(Stone,
              {p.x - 88, p.y - 36},
@@ -815,20 +975,20 @@ void Renderer::DrawCharacter(P p, int variant, int direction, int frame, bool pl
     float u0 = (frame * 40 + .5f) / 320.f, u1 = (frame * 40 + 39.5f) / 320.f;
     float v0 = ((palette * 4 + direction) * 64 + .5f) / 2048.f,
           v1 = ((palette * 4 + direction) * 64 + 63.5f) / 2048.f;
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, m->atlas);
+    RenderQueue::EnableTexture(true);
+    RenderQueue::Texture(m->atlas);
     Color(C(1, 1, 1));
-    glBegin(GL_QUADS);
-    glTexCoord2f(u0, v0);
-    glVertex2f(p.x - 25, p.y - 76);
-    glTexCoord2f(u1, v0);
-    glVertex2f(p.x + 25, p.y - 76);
-    glTexCoord2f(u1, v1);
-    glVertex2f(p.x + 25, p.y + 4);
-    glTexCoord2f(u0, v1);
-    glVertex2f(p.x - 25, p.y + 4);
-    glEnd();
-    glDisable(GL_TEXTURE_2D);
+    RenderQueue::Begin(GL_QUADS);
+    RenderQueue::TexCoord(u0, v0);
+    RenderQueue::Vertex(p.x - 25, p.y - 76);
+    RenderQueue::TexCoord(u1, v0);
+    RenderQueue::Vertex(p.x + 25, p.y - 76);
+    RenderQueue::TexCoord(u1, v1);
+    RenderQueue::Vertex(p.x + 25, p.y + 4);
+    RenderQueue::TexCoord(u0, v1);
+    RenderQueue::Vertex(p.x - 25, p.y + 4);
+    RenderQueue::End();
+    RenderQueue::EnableTexture(false);
     if (player)
     {
         Rect(p.x + 17, p.y - 29, 7, 11, C(.24f, .20f, .12f));
@@ -891,29 +1051,29 @@ void Renderer::DrawFire(P p, float scale, bool mystical)
 {
     if (m->fireProgram)
     {
-        glUseProgram(m->fireProgram);
-        glUniform1f(glGetUniformLocation(m->fireProgram, "uTime"), m->time);
-        glUniform1f(glGetUniformLocation(m->fireProgram, "uMystical"), mystical ? 1.f : 0.f);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-        glBegin(GL_QUADS);
-        glTexCoord2f(0, 0);
-        glVertex2f(p.x - 45 * scale, p.y - 85 * scale);
-        glTexCoord2f(1, 0);
-        glVertex2f(p.x + 45 * scale, p.y - 85 * scale);
-        glTexCoord2f(1, 1);
-        glVertex2f(p.x + 45 * scale, p.y + 8 * scale);
-        glTexCoord2f(0, 1);
-        glVertex2f(p.x - 45 * scale, p.y + 8 * scale);
-        glEnd();
-        glUseProgram(0);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        RenderQueue::Program(m->fireProgram);
+        glUniform1f(m->fireTime, m->time);
+        glUniform1f(m->fireMystical, mystical ? 1.f : 0.f);
+        RenderQueue::Blend(GL_SRC_ALPHA, GL_ONE);
+        RenderQueue::Begin(GL_QUADS);
+        RenderQueue::TexCoord(0, 0);
+        RenderQueue::Vertex(p.x - 45 * scale, p.y - 85 * scale);
+        RenderQueue::TexCoord(1, 0);
+        RenderQueue::Vertex(p.x + 45 * scale, p.y - 85 * scale);
+        RenderQueue::TexCoord(1, 1);
+        RenderQueue::Vertex(p.x + 45 * scale, p.y + 8 * scale);
+        RenderQueue::TexCoord(0, 1);
+        RenderQueue::Vertex(p.x - 45 * scale, p.y + 8 * scale);
+        RenderQueue::End();
+        RenderQueue::Program(0);
+        RenderQueue::Blend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         return;
     }
 
     // Degraded fallback only if shader compilation failed.
     float t = m->time;
     Col outer = mystical ? C(.20f, .72f, .64f) : C(1, .43f, .10f);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    RenderQueue::Blend(GL_SRC_ALPHA, GL_ONE);
     Ellipse(
         {p.x, p.y - 12 * scale}, 65 * scale, 55 * scale, C(outer.r, outer.g, outer.b, .17f), true);
     for (int i = 0; i < 11; ++i)
@@ -937,27 +1097,29 @@ void Renderer::DrawFire(P p, float scale, bool mystical)
                 C(outer.r, .72f, outer.b, (1 - life) * .75f));
     }
 
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    RenderQueue::Blend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void Renderer::Present()
 {
+    RenderQueue::Flush();
+    RenderStats::SetPass("render.postprocess");
+    Profiler::Scope profile("render.postprocess");
+    Profiler::GpuScope gpuProfile("render.postprocess");
     if (m->post)
     {
         glDisable(GL_BLEND);
         glEnable(GL_TEXTURE_2D);
         glUseProgram(m->blur);
-        glUniform1i(glGetUniformLocation(m->blur, "source"), 0);
+        glUniform1i(m->blurSource, 0);
         for (int pass = 0; pass < 2; ++pass)
         {
             glBindFramebuffer(GL_FRAMEBUFFER, m->bloomFbo[pass]);
             glViewport(0, 0, 640, 400);
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, pass == 0 ? m->sceneTexture : m->bloomTexture[0]);
-            glUniform2f(glGetUniformLocation(m->blur, "stepUV"),
-                        pass == 0 ? 2.f / 1280.f : 0.f,
-                        pass == 1 ? 1.f / 400.f : 0.f);
-            glUniform1f(glGetUniformLocation(m->blur, "extractLight"), pass == 0 ? 1.f : 0.f);
+            glUniform2f(m->blurStep, pass == 0 ? 2.f / 1280.f : 0.f, pass == 1 ? 1.f / 400.f : 0.f);
+            glUniform1f(m->blurExtract, pass == 0 ? 1.f : 0.f);
             Fullscreen();
         }
 
@@ -971,9 +1133,9 @@ void Renderer::Present()
         glBindTexture(GL_TEXTURE_2D, m->sceneTexture);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, m->bloomTexture[1]);
-        glUniform1i(glGetUniformLocation(m->composite, "scene"), 0);
-        glUniform1i(glGetUniformLocation(m->composite, "bloom"), 1);
-        glUniform2f(glGetUniformLocation(m->composite, "texel"), 1.f / 1280.f, 1.f / 800.f);
+        glUniform1i(m->compositeScene, 0);
+        glUniform1i(m->compositeBloom, 1);
+        glUniform2f(m->compositeTexel, 1.f / 1280.f, 1.f / 800.f);
         Fullscreen();
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -985,6 +1147,7 @@ void Renderer::Present()
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    RenderQueue::ResetState();
     Canvas();
 }
 

@@ -24,8 +24,12 @@ class Renderer
     bool HasPostProcessing() const;
     void Resize(int width, int height);
     void BeginScene(RenderPoint projectedCamera, float time);
-    void DrawTerrain();
-    void DrawHuntingTerrain(const LevelOneMap& map);
+    void DrawTerrain(RenderPoint origin = {0, 0}, float elevation = 0);
+    void PrepareHuntingMap(const LevelOneMap& map);
+    void DrawMinimap(float x, float y, float width, float height);
+    void DrawHuntingTerrain(const LevelOneMap& map,
+                            RenderPoint origin = {0, 0},
+                            float elevation = 0);
     void DrawWaterPolygon(const std::vector<RenderPoint>& worldPoints);
     void DrawCachedModel(RenderPoint foot, int model, int frame, float facing, float opacity = 1.f);
     void DrawShadow(RenderPoint foot, float width, float height);

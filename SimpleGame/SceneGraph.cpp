@@ -1,0 +1,315 @@
+#include "stdafx.h"
+#include "SceneGraph.h"
+#include "WorldGeometry.h"
+#include "RenderQueue.h"
+#include "Profiler.h"
+#include <algorithm>
+#include <stdexcept>
+
+namespace
+{
+    // Restore traversal state even if a gameplay callback throws.
+    class TraversalScope
+    {
+      public:
+        explicit TraversalScope(bool& value) : value(value)
+        {
+            if (value)
+            {
+                throw std::logic_error("SceneGraph traversal cannot be nested");
+            }
+
+            value = true;
+        }
+
+        ~TraversalScope()
+        {
+            value = false;
+        }
+
+      private:
+        bool& value;
+    };
+} // namespace
+
+RenderPoint SceneView::Screen(RenderPoint world, float height) const
+{
+    const RenderPoint projected = WorldGeometry::Project(world);
+    return {projected.x - camera.x + 640.f, projected.y - camera.y + 420.f - height};
+}
+
+RenderPoint SceneView::Screen(const Actor& actor) const
+{
+    return Screen(actor.Position(), actor.Height());
+}
+
+bool SceneView::InView(const Actor& actor) const
+{
+    const RenderPoint foot = Screen(actor);
+    return !actor.cull ||
+           (foot.x >= -200.f && foot.x <= 1480.f && foot.y >= -100.f && foot.y <= 1100.f);
+}
+
+SceneGraph::SceneGraph()
+{
+    std::unique_ptr<Actor> root(new Actor("Root"));
+    root->id = nextId++;
+    root->owner = this;
+    index.emplace(root->id, root.get());
+    actors.push_back(std::move(root));
+}
+
+Actor& SceneGraph::Root()
+{
+    return *actors.front();
+}
+
+Actor* SceneGraph::Find(Actor::Id id) const
+{
+    const auto found = index.find(id);
+    return found != index.end() && !found->second->pendingDestroy ? found->second : nullptr;
+}
+
+void SceneGraph::Add(std::unique_ptr<Actor> actor, Actor& parent)
+{
+    if (parent.owner != this || parent.pendingDestroy)
+    {
+        throw std::invalid_argument("Actor parent must belong to this scene and be alive");
+    }
+
+    actor->id = nextId++;
+    actor->owner = this;
+    actor->parent = &parent;
+    if (actors.size() == actors.capacity())
+    {
+        actors.reserve(actors.capacity() * 2 + 1);
+    }
+
+    if (parent.children.size() == parent.children.capacity())
+    {
+        parent.children.reserve(parent.children.capacity() * 2 + 1);
+    }
+
+    index.emplace(actor->id, actor.get());
+    parent.children.push_back(actor.get());
+    actors.push_back(std::move(actor));
+}
+
+bool SceneGraph::Reparent(Actor& actor, Actor& parent, bool keepWorldPosition)
+{
+    if (actor.owner != this || parent.owner != this || &actor == &Root() || actor.pendingDestroy ||
+        parent.pendingDestroy)
+    {
+        return false;
+    }
+
+    for (const Actor* ancestor = &parent; ancestor; ancestor = ancestor->parent)
+    {
+        if (ancestor == &actor)
+        {
+            return false;
+        }
+    }
+
+    const RenderPoint position = actor.Position();
+    const float height = actor.Height();
+    if (parent.children.size() == parent.children.capacity())
+    {
+        parent.children.reserve(parent.children.capacity() * 2 + 1);
+    }
+
+    auto& siblings = actor.parent->children;
+    siblings.erase(std::remove(siblings.begin(), siblings.end(), &actor), siblings.end());
+    actor.parent = &parent;
+    parent.children.push_back(&actor);
+    if (keepWorldPosition)
+    {
+        actor.SetPosition(position);
+        actor.SetLocalHeight(height - parent.Height());
+    }
+
+    return true;
+}
+
+void SceneGraph::Destroy(Actor& actor)
+{
+    if (actor.owner != this || &actor == &Root() || actor.pendingDestroy)
+    {
+        return;
+    }
+
+    actor.pendingDestroy = true;
+    for (Actor* child : actor.children)
+    {
+        Destroy(*child);
+    }
+}
+
+void SceneGraph::ClearChildren(Actor& parent)
+{
+    if (parent.owner != this)
+    {
+        return;
+    }
+
+    for (Actor* child : parent.children)
+    {
+        Destroy(*child);
+    }
+
+    CollectDestroyed();
+}
+
+void SceneGraph::CollectDestroyed()
+{
+    Profiler::Scope profile("scene.collect_destroyed");
+    if (traversing)
+    {
+        return;
+    }
+
+    // Unlink while every parent/child pointer is still valid, then release ownership.
+    for (const auto& actor : actors)
+    {
+        if (actor->pendingDestroy)
+        {
+            index.erase(actor->id);
+        }
+
+        auto& children = actor->children;
+        children.erase(std::remove_if(children.begin(),
+                                      children.end(),
+                                      [](const Actor* child)
+                                      {
+                                          return child->pendingDestroy;
+                                      }),
+                       children.end());
+    }
+
+    actors.erase(std::remove_if(actors.begin(),
+                                actors.end(),
+                                [](const std::unique_ptr<Actor>& actor)
+                                {
+                                    return actor->pendingDestroy;
+                                }),
+                 actors.end());
+}
+
+void SceneGraph::Gather(Actor& actor, std::vector<Actor*>& result) const
+{
+    if (!actor.IsActive())
+    {
+        return;
+    }
+
+    result.push_back(&actor);
+    for (Actor* child : actor.children)
+    {
+        Gather(*child, result);
+    }
+}
+
+void SceneGraph::Update(float dt)
+{
+    Profiler::Scope profile("scene.update");
+    Profiler::Gauge("scene.actor_count", static_cast<double>(actors.size()));
+    CollectDestroyed();
+    {
+        TraversalScope scope(traversing);
+        std::vector<Actor*> snapshot;
+        {
+            Profiler::Scope gatherProfile("scene.gather");
+            Gather(Root(), snapshot);
+        }
+        for (Actor* actor : snapshot)
+        {
+            if (actor->IsActive())
+            {
+                Profiler::Count("scene.actor_updates");
+                actor->Update(dt);
+            }
+        }
+    }
+
+    CollectDestroyed();
+}
+
+void SceneGraph::Render(const SceneView& view)
+{
+    Profiler::Scope profile("scene.render");
+    CollectDestroyed();
+    {
+        TraversalScope scope(traversing);
+        std::vector<Actor*> snapshot;
+        {
+            Profiler::Scope gatherProfile("scene.gather");
+            Gather(Root(), snapshot);
+        }
+        {
+            Profiler::Scope sortProfile("scene.sort");
+            std::stable_sort(snapshot.begin(),
+                             snapshot.end(),
+                             [](const Actor* a, const Actor* b)
+                             {
+                                 if (a->layer != b->layer)
+                                 {
+                                     return a->layer < b->layer;
+                                 }
+
+                                 const float depthA = WorldGeometry::Project(a->Position()).y -
+                                                      a->Height() + a->depthBias;
+                                 const float depthB = WorldGeometry::Project(b->Position()).y -
+                                                      b->Height() + b->depthBias;
+                                 return depthA == depthB ? a->GetId() < b->GetId()
+                                                         : depthA < depthB;
+                             });
+        }
+
+        auto drawLayer = [&](ActorLayer layer)
+        {
+            const char* key = layer == ActorLayer::Terrain  ? "render.terrain"
+                              : layer == ActorLayer::World  ? "render.world"
+                              : layer == ActorLayer::Effect ? "render.effects"
+                                                            : "render.ui";
+            Profiler::Scope passProfile(key);
+            RenderStats::SetPass(key);
+            Profiler::GpuScope gpuProfile(key);
+            for (const Actor* actor : snapshot)
+            {
+                if (actor->layer == layer && actor->IsVisible() && view.InView(*actor))
+                {
+                    Profiler::Count("scene.actor_draws");
+                    actor->Draw(view);
+                }
+                else if (actor->layer == layer)
+                {
+                    Profiler::Count("scene.hidden_or_culled");
+                }
+            }
+            RenderQueue::Flush();
+        };
+
+        view.renderer.BeginScene(view.camera, view.time);
+        drawLayer(ActorLayer::Terrain);
+        {
+            Profiler::Scope shadowProfile("render.shadows");
+            RenderStats::SetPass("render.shadows");
+            Profiler::GpuScope gpuProfile("render.shadows");
+            for (const Actor* actor : snapshot)
+            {
+                if (actor->layer == ActorLayer::World && actor->IsVisible() && view.InView(*actor))
+                {
+                    actor->DrawShadow(view);
+                }
+            }
+
+            RenderQueue::Flush();
+        }
+        drawLayer(ActorLayer::World);
+        drawLayer(ActorLayer::Effect);
+        view.renderer.Present();
+        drawLayer(ActorLayer::Interface);
+    }
+
+    CollectDestroyed();
+}

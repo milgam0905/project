@@ -7,7 +7,11 @@
 #include "TutorialGame.h"
 #include "UiText.h"
 #include "Renderer.h"
+#include "RenderStats.h"
+#include "RenderQueue.h"
+#include "Profiler.h"
 #include "WorldGeometry.h"
+#include "SceneGraph.h"
 #include <algorithm>
 #include <cmath>
 #include <initializer_list>
@@ -39,19 +43,19 @@ namespace
 
     void Tint(Color c)
     {
-        glColor4f(c.r, c.g, c.b, c.a);
+        RenderQueue::Color(c.r, c.g, c.b, c.a);
     }
 
     void Poly(std::initializer_list<Point> points, Color c)
     {
         Tint(c);
-        glBegin(GL_TRIANGLE_FAN);
+        RenderQueue::Begin(GL_TRIANGLE_FAN);
         for (Point p : points)
         {
-            glVertex2f(p.x, p.y);
+            RenderQueue::Vertex(p.x, p.y);
         }
 
-        glEnd();
+        RenderQueue::End();
     }
 
     void Rect(float x, float y, float w, float h, Color c)
@@ -62,24 +66,24 @@ namespace
     void Ellipse(float x, float y, float rx, float ry, Color c)
     {
         Tint(c);
-        glBegin(GL_TRIANGLE_FAN);
-        glVertex2f(x, y);
+        RenderQueue::Begin(GL_TRIANGLE_FAN);
+        RenderQueue::Vertex(x, y);
         for (int i = 0; i <= 32; ++i)
         {
             float a = i * Pi / 16;
-            glVertex2f(x + std::cos(a) * rx, y + std::sin(a) * ry);
+            RenderQueue::Vertex(x + std::cos(a) * rx, y + std::sin(a) * ry);
         }
 
-        glEnd();
+        RenderQueue::End();
     }
 
     void Line(Point a, Point b, Color c)
     {
         Tint(c);
-        glBegin(GL_LINES);
-        glVertex2f(a.x, a.y);
-        glVertex2f(b.x, b.y);
-        glEnd();
+        RenderQueue::Begin(GL_LINES);
+        RenderQueue::Vertex(a.x, a.y);
+        RenderQueue::Vertex(b.x, b.y);
+        RenderQueue::End();
     }
 
     void Glow(Point p, float radius, Color c)
@@ -108,13 +112,23 @@ namespace
         Herb,
         Shrine,
         Lamp,
-        Beast,
         Bonfire
     };
 
-    struct Object
+    struct Placement
     {
         Point p;
+        Kind kind;
+        int variant;
+    };
+
+    struct TutorialActor : Actor
+    {
+        TutorialActor(Kind kind, int variant)
+            : Actor("TutorialObject"), kind(kind), variant(variant)
+        {
+        }
+
         Kind kind;
         int variant;
         Point home = {0, 0};
@@ -123,11 +137,18 @@ namespace
         bool moving = false;
     };
 
-    struct Animal
+    struct Animal : Actor
     {
-        Point p, home;
+        Animal(Point home, int species, float phase)
+            : Actor("Wildlife"), home(home), species(species), phase(phase)
+        {
+            SetPosition(home);
+        }
+
+        Point home;
         int species;
-        float phase, facing;
+        float phase;
+        float facing = 1;
     };
 
     struct Page
@@ -142,13 +163,20 @@ struct TutorialGame::Impl
     TextPainter text;
     int windowWidth = 1280, windowHeight = 800, playerDirection = 0;
     bool playerMoving = false;
-    std::vector<Animal> animals;
+    SceneGraph scene;
+    Actor& world = scene.Spawn(scene.Root(), "Tutorial");
+    Actor& terrain = scene.Spawn(world, "Terrain");
+    Actor& player = scene.Spawn(world, "Player");
+    Actor& village = scene.Spawn(world, "Village");
+    Actor& wildlife = scene.Spawn(world, "Wildlife");
+    std::vector<Actor::Id> animals;
     bool keys[256] = {};
     bool help = false, choice = false, accepted = false, quit = false;
-    Point player = {0, 3}, camera = Iso(player);
+    Point camera = Iso({0, 3});
     Quest quest = Quest::Meet;
     float time = 0, elapsed = 0, stride = 0;
-    std::vector<Object> objects;
+    std::vector<Actor::Id> objects;
+    Actor::Id elderId = 0, herbId = 0, shrineId = 0;
     std::vector<Page> pages;
     size_t page = 0;
     const Point elder = {0, 0}, herb = {-8, -5}, shrine = {6, -7};
@@ -156,25 +184,27 @@ struct TutorialGame::Impl
 
     Impl()
     {
-        objects = {{{-3, 0}, Kind::House, 0},      {{1, -4}, Kind::House, 1},
-                   {{4, 1}, Kind::House, 2},       {{-3, 5}, Kind::House, 3},
-                   {elder, Kind::Villager, 0},     {{-1, 2}, Kind::Villager, 1},
-                   {{2, 3}, Kind::Villager, 2},    {{-5, 2}, Kind::Villager, 3},
-                   {{3, -2}, Kind::Villager, 4},   {{0, 6}, Kind::Villager, 5},
-                   {{5, -4}, Kind::Villager, 6},   {{-6, -4}, Kind::Villager, 7},
-                   {{-5, 7}, Kind::Villager, 8},   {{-1, 10}, Kind::Villager, 9},
-                   {{4, 7}, Kind::Villager, 10},   {{8, 6}, Kind::Villager, 11},
-                   {{10, 9}, Kind::Villager, 12},  {{-7, -8}, Kind::Villager, 13},
-                   {{-10, 0}, Kind::Villager, 14}, {{2, -9}, Kind::Villager, 15},
-                   {{-7, 8}, Kind::House, 4},      {{6, 8}, Kind::House, 5},
-                   {{-8, -10}, Kind::House, 6},    {{12, 7}, Kind::House, 7},
-                   {{3, 11}, Kind::House, 8},      {{-1, 5}, Kind::Bonfire, 0},
-                   {herb, Kind::Herb, 0},          {shrine, Kind::Shrine, 0},
-                   {{-1, -1}, Kind::Lamp, 0},      {{2, 5}, Kind::Lamp, 0},
-                   {{5, -6}, Kind::Lamp, 0}};
-        for (Object& object : objects)
+        SetupScene();
+        const Placement placements[] = {
+            {{-3, 0}, Kind::House, 0},      {{1, -4}, Kind::House, 1},
+            {{4, 1}, Kind::House, 2},       {{-3, 5}, Kind::House, 3},
+            {elder, Kind::Villager, 0},     {{-1, 2}, Kind::Villager, 1},
+            {{2, 3}, Kind::Villager, 2},    {{-5, 2}, Kind::Villager, 3},
+            {{3, -2}, Kind::Villager, 4},   {{0, 6}, Kind::Villager, 5},
+            {{5, -4}, Kind::Villager, 6},   {{-6, -4}, Kind::Villager, 7},
+            {{-5, 7}, Kind::Villager, 8},   {{-1, 10}, Kind::Villager, 9},
+            {{4, 7}, Kind::Villager, 10},   {{8, 6}, Kind::Villager, 11},
+            {{10, 9}, Kind::Villager, 12},  {{-7, -8}, Kind::Villager, 13},
+            {{-10, 0}, Kind::Villager, 14}, {{2, -9}, Kind::Villager, 15},
+            {{-7, 8}, Kind::House, 4},      {{6, 8}, Kind::House, 5},
+            {{-8, -10}, Kind::House, 6},    {{12, 7}, Kind::House, 7},
+            {{3, 11}, Kind::House, 8},      {{-1, 5}, Kind::Bonfire, 0},
+            {herb, Kind::Herb, 0},          {shrine, Kind::Shrine, 0},
+            {{-1, -1}, Kind::Lamp, 0},      {{2, 5}, Kind::Lamp, 0},
+            {{5, -6}, Kind::Lamp, 0}};
+        for (const Placement& placement : placements)
         {
-            object.home = object.p;
+            SpawnObject(placement);
         }
 
         const Point homes[] = {{-10, -7},
@@ -188,7 +218,25 @@ struct TutorialGame::Impl
                                {-21, 18}};
         for (int i = 0; i < 9; ++i)
         {
-            animals.push_back({homes[i], homes[i], i % 3, static_cast<float>(i), 1.f});
+            Animal& animal = scene.Spawn<Animal>(wildlife, homes[i], i % 3, static_cast<float>(i));
+            animal.onUpdate = [this](Actor& actor, float dt)
+            {
+                if (pages.empty() && !help)
+                {
+                    UpdateAnimal(static_cast<Animal&>(actor), dt);
+                }
+            };
+            animal.onDraw = [](const Actor& actor, const SceneView& view)
+            {
+                const Animal& animal = static_cast<const Animal&>(actor);
+                view.renderer.DrawAnimal(
+                    view.Screen(animal), animal.species, animal.phase, animal.facing);
+            };
+            animal.onShadow = [](const Actor& actor, const SceneView& view)
+            {
+                view.renderer.DrawShadow(view.Screen(actor), 20, 22);
+            };
+            animals.push_back(animal.GetId());
         }
         // Expand both world axes by two. Keep original short quest destinations intact.
         for (int x = -27; x <= 27; ++x)
@@ -213,16 +261,30 @@ struct TutorialGame::Impl
                 }
 
                 bool reserved = false;
-                for (const Object& object : objects)
+                for (Actor::Id id : objects)
                 {
-                    if (object.kind != Kind::Tree && Distance(p, object.p) < 2.3f)
+                    auto* objectActor = static_cast<TutorialActor*>(scene.Find(id));
+                    if (!objectActor)
+                    {
+                        continue;
+                    }
+
+                    const TutorialActor& object = *objectActor;
+                    if (object.kind != Kind::Tree && Distance(p, object.Position()) < 2.3f)
                     {
                         reserved = true;
                     }
                 }
 
-                for (const Animal& animal : animals)
+                for (Actor::Id id : animals)
                 {
+                    auto* animalActor = static_cast<Animal*>(scene.Find(id));
+                    if (!animalActor)
+                    {
+                        continue;
+                    }
+
+                    const Animal& animal = *animalActor;
                     if (Distance(p, animal.home) < 1.5f)
                     {
                         reserved = true;
@@ -238,9 +300,126 @@ struct TutorialGame::Impl
                 p.y += (seed % 13 - 6) * .065f;
                 if (!Water(p))
                 {
-                    objects.push_back({p, Kind::Tree, seed % 3});
+                    SpawnObject({p, Kind::Tree, seed % 3});
                 }
             }
+        }
+    }
+
+    void SetupScene()
+    {
+        terrain.layer = ActorLayer::Terrain;
+        terrain.cull = false;
+        terrain.onDraw = [](const Actor& actor, const SceneView& view)
+        {
+            view.renderer.DrawTerrain(actor.Position(), actor.Height());
+        };
+
+        player.SetPosition({0, 3});
+        player.onUpdate = [this](Actor&, float dt)
+        {
+            UpdatePlayer(dt);
+        };
+        player.onDraw = [this](const Actor& actor, const SceneView& view)
+        {
+            Person(view.Screen(actor), 0, true);
+        };
+        player.onShadow = [](const Actor& actor, const SceneView& view)
+        {
+            view.renderer.DrawShadow(view.Screen(actor), 13, 50);
+        };
+
+        Actor& atmosphere = scene.Spawn(world, "Atmosphere");
+        atmosphere.layer = ActorLayer::Effect;
+        atmosphere.cull = false;
+        atmosphere.onDraw = [this](const Actor& actor, const SceneView&)
+        {
+            const Point offset = actor.Position();
+            RenderQueue::PushMatrix();
+            RenderQueue::Translate(offset.x, offset.y - actor.Height(), 0);
+            Atmosphere();
+            RenderQueue::PopMatrix();
+        };
+
+        Actor& hud = scene.Spawn(scene.Root(), "HUD");
+        hud.layer = ActorLayer::Interface;
+        hud.cull = false;
+        hud.onDraw = [this](const Actor& actor, const SceneView&)
+        {
+            const Point offset = actor.Position();
+            RenderQueue::PushMatrix();
+            RenderQueue::Translate(offset.x, offset.y - actor.Height(), 0);
+            Hud();
+            RenderQueue::PopMatrix();
+        };
+    }
+
+    void SpawnObject(const Placement& placement)
+    {
+        TutorialActor& object =
+            scene.Spawn<TutorialActor>(village, placement.kind, placement.variant);
+        object.SetPosition(placement.p);
+        object.home = placement.p;
+        object.onUpdate = [this](Actor& actor, float dt)
+        {
+            if (pages.empty() && !help)
+            {
+                UpdateObject(static_cast<TutorialActor&>(actor), dt);
+            }
+        };
+        object.onDraw = [this](const Actor& actor, const SceneView& view)
+        {
+            DrawObject(static_cast<const TutorialActor&>(actor), view);
+        };
+        object.onShadow = [](const Actor& actor, const SceneView& view)
+        {
+            const TutorialActor& object = static_cast<const TutorialActor&>(actor);
+            Point foot = view.Screen(object);
+            if (object.kind == Kind::House)
+            {
+                view.renderer.DrawShadow(foot, 82, 135);
+            }
+            else if (object.kind == Kind::Tree)
+            {
+                view.renderer.DrawShadow(foot, 22, 100);
+            }
+            else if (object.kind == Kind::Villager)
+            {
+                view.renderer.DrawShadow(foot, 13, 50);
+            }
+        };
+        objects.push_back(object.GetId());
+
+        if (placement.kind == Kind::Villager && placement.variant == 0)
+        {
+            elderId = object.GetId();
+        }
+        else if (placement.kind == Kind::Herb)
+        {
+            herbId = object.GetId();
+        }
+        else if (placement.kind == Kind::Shrine)
+        {
+            shrineId = object.GetId();
+        }
+
+        if (placement.kind == Kind::Bonfire || placement.kind == Kind::Lamp ||
+            placement.kind == Kind::Shrine)
+        {
+            Actor& flame = scene.Spawn(object, "Flame");
+            const float height = placement.kind == Kind::Lamp     ? 59.f
+                                 : placement.kind == Kind::Shrine ? 40.f
+                                                                  : 0.f;
+            const float scale = placement.kind == Kind::Lamp     ? .55f
+                                : placement.kind == Kind::Shrine ? .65f
+                                                                 : 1.f;
+            const bool mystical = placement.kind == Kind::Shrine;
+            flame.SetLocalHeight(height);
+            flame.depthBias = height;
+            flame.onDraw = [scale, mystical](const Actor& actor, const SceneView& view)
+            {
+                view.renderer.DrawFire(view.Screen(actor), scale, mystical);
+            };
         }
     }
 
@@ -251,21 +430,34 @@ struct TutorialGame::Impl
 
     bool Blocked(Point p) const
     {
+        Profiler::Count("collision.tutorial_queries");
         if (std::abs(p.x) > WorldGeometry::HalfWidth || std::abs(p.y) > WorldGeometry::HalfHeight ||
             Water(p))
         {
             return true;
         }
 
-        for (const Object& o : objects)
+        for (Actor::Id id : objects)
         {
-            if (o.kind == Kind::House && std::abs(p.x - o.p.x) < 1.35f &&
-                std::abs(p.y - o.p.y) < 1.15f)
+            auto* objectActor = static_cast<TutorialActor*>(scene.Find(id));
+            if (!objectActor)
+            {
+                continue;
+            }
+
+            const TutorialActor& o = *objectActor;
+            if (!o.IsActive())
+            {
+                continue;
+            }
+
+            if (o.kind == Kind::House && std::abs(p.x - o.Position().x) < 1.35f &&
+                std::abs(p.y - o.Position().y) < 1.15f)
             {
                 return true;
             }
 
-            if (o.kind == Kind::Tree && Distance(p, o.p) < .42f)
+            if (o.kind == Kind::Tree && Distance(p, o.Position()) < .42f)
             {
                 return true;
             }
@@ -276,37 +468,41 @@ struct TutorialGame::Impl
 
     Point Screen(Point p) const
     {
-        Point s = Iso(p);
-        return {s.x - camera.x + 640, s.y - camera.y + 420};
+        Point projected = WorldGeometry::Project(p);
+        return {projected.x - camera.x + 640, projected.y - camera.y + 420};
     }
 
     Point Target() const
     {
-        if (quest == Quest::Herb)
-        {
-            return herb;
-        }
-
-        if (quest == Quest::Lake)
-        {
-            return shrine;
-        }
-
-        return elder;
+        Actor::Id id = quest == Quest::Herb ? herbId : quest == Quest::Lake ? shrineId : elderId;
+        const Actor* target = scene.Find(id);
+        return target ? target->Position() : player.Position();
     }
 
-    const Object* Nearest() const
+    const TutorialActor* Nearest() const
     {
-        const Object* best = nullptr;
+        const TutorialActor* best = nullptr;
         float nearest = 1.65f;
-        for (const Object& o : objects)
+        for (Actor::Id id : objects)
         {
+            auto* objectActor = static_cast<TutorialActor*>(scene.Find(id));
+            if (!objectActor)
+            {
+                continue;
+            }
+
+            const TutorialActor& o = *objectActor;
+            if (!o.IsActive())
+            {
+                continue;
+            }
+
             if (o.kind != Kind::Villager && o.kind != Kind::Herb && o.kind != Kind::Shrine)
             {
                 continue;
             }
 
-            float d = Distance(player, o.p);
+            float d = Distance(player.Position(), o.Position());
             if (d < nearest)
             {
                 nearest = d;
@@ -326,7 +522,13 @@ struct TutorialGame::Impl
 
     void Interact()
     {
-        const Object* o = Nearest();
+        Profiler::Scope profile("game.interaction");
+        if (!player.IsActive())
+        {
+            return;
+        }
+
+        const TutorialActor* o = Nearest();
         if (!o)
         {
             return;
@@ -512,12 +714,24 @@ struct TutorialGame::Impl
 
     void Update(float dt)
     {
+        Profiler::Gauge("game.paused", help || !pages.empty() ? 1 : 0);
         time += dt;
         if (quest != Quest::Complete)
         {
             elapsed += dt;
         }
 
+        scene.Update(dt);
+
+        Point desired = Iso(player.Position());
+        float smoothing = 1 - std::exp(-dt * 7);
+        camera.x += (desired.x - camera.x) * smoothing;
+        camera.y += (desired.y - camera.y) * smoothing;
+    }
+
+    void UpdatePlayer(float dt)
+    {
+        Profiler::Scope profile("game.player_update");
         playerMoving = false;
         if (pages.empty() && !help)
         {
@@ -531,18 +745,20 @@ struct TutorialGame::Impl
                 // Inverse projection gives screen-relative WASD and equal diagonal speed.
                 float dx = (sx / 84 + sy / 42) * 115 * dt;
                 float dy = (-sx / 84 + sy / 42) * 115 * dt;
-                Point previous = player;
-                if (!Blocked({player.x + dx, player.y}))
+                Point previous = player.Position();
+                Point next = previous;
+                if (!Blocked({player.Position().x + dx, player.Position().y}))
                 {
-                    player.x += dx;
+                    next.x += dx;
                 }
 
-                if (!Blocked({player.x, player.y + dy}))
+                if (!Blocked({next.x, next.y + dy}))
                 {
-                    player.y += dy;
+                    next.y += dy;
                 }
 
-                playerMoving = Distance(previous, player) > .0001f;
+                player.SetPosition(next);
+                playerMoving = Distance(previous, player.Position()) > .0001f;
                 if (playerMoving)
                 {
                     stride += dt * 9;
@@ -551,98 +767,88 @@ struct TutorialGame::Impl
                 playerDirection = std::abs(sx) > std::abs(sy) ? (sx > 0 ? 1 : 3) : (sy > 0 ? 0 : 2);
             }
         }
-
-        if (pages.empty() && !help)
-        {
-            for (Object& object : objects)
-            {
-                if (object.kind != Kind::Villager || object.variant < 8)
-                {
-                    continue;
-                }
-
-                object.moving = false;
-                if (Distance(player, object.p) < 1.9f)
-                {
-                    continue;
-                }
-
-                const float seed = static_cast<float>(object.variant);
-                Point target = {object.home.x + std::sin(time * .18f + seed) * 1.35f,
-                                object.home.y + std::cos(time * .14f + seed) * 1.0f};
-                float length = Distance(target, object.p);
-                if (length < .18f)
-                {
-                    continue;
-                }
-
-                Point next = {object.p.x + (target.x - object.p.x) / length * dt * .75f,
-                              object.p.y + (target.y - object.p.y) / length * dt * .75f};
-                if (!Blocked(next))
-                {
-                    Point delta = Iso({next.x - object.p.x, next.y - object.p.y});
-                    object.direction = std::abs(delta.x) > std::abs(delta.y)
-                                           ? (delta.x > 0 ? 1 : 3)
-                                           : (delta.y > 0 ? 0 : 2);
-                    object.p = next;
-                    object.phase += dt * 7;
-                    object.moving = true;
-                }
-            }
-
-            for (Animal& animal : animals)
-            {
-                Point target = {animal.home.x + std::sin(time * .23f + animal.species) * 2.5f,
-                                animal.home.y + std::cos(time * .19f + animal.phase * .02f) * 2.f};
-                bool flee = Distance(animal.p, player) < 3.8f;
-                if (flee)
-                {
-                    target = {animal.p.x + (animal.p.x - player.x) * 2,
-                              animal.p.y + (animal.p.y - player.y) * 2};
-                }
-
-                float length = Distance(animal.p, target);
-                if (length < .1f)
-                {
-                    continue;
-                }
-
-                float speed = flee ? 3.5f : 1.05f;
-                Point next = {animal.p.x + (target.x - animal.p.x) / length * dt * speed,
-                              animal.p.y + (target.y - animal.p.y) / length * dt * speed};
-                // Axis sliding keeps animals off water and out of buildings/trees.
-                Point previous = animal.p;
-                if (!Blocked({next.x, animal.p.y}))
-                {
-                    animal.p.x = next.x;
-                }
-
-                if (!Blocked({animal.p.x, next.y}))
-                {
-                    animal.p.y = next.y;
-                }
-
-                if (Distance(previous, animal.p) > .001f)
-                {
-                    animal.phase += dt * (flee ? 13.f : 6.f);
-                    Point delta = Iso({animal.p.x - previous.x, animal.p.y - previous.y});
-                    if (std::abs(delta.x) > .001f)
-                    {
-                        animal.facing = delta.x;
-                    }
-                }
-            }
-        }
-
-        Point desired = Iso(player);
-        float smoothing = 1 - std::exp(-dt * 7);
-        camera.x += (desired.x - camera.x) * smoothing;
-        camera.y += (desired.y - camera.y) * smoothing;
     }
 
-    void Ground()
+    void UpdateObject(TutorialActor& object, float dt)
     {
-        renderer.DrawTerrain();
+        Profiler::Scope profile("ai.npc_update");
+        if (object.kind != Kind::Villager || object.variant < 8)
+        {
+            return;
+        }
+
+        object.moving = false;
+        if (Distance(player.Position(), object.Position()) < 1.9f)
+        {
+            return;
+        }
+
+        const float seed = static_cast<float>(object.variant);
+        Point target = {object.home.x + std::sin(time * .18f + seed) * 1.35f,
+                        object.home.y + std::cos(time * .14f + seed) * 1.0f};
+        float length = Distance(target, object.Position());
+        if (length < .18f)
+        {
+            return;
+        }
+
+        Point next = {object.Position().x + (target.x - object.Position().x) / length * dt * .75f,
+                      object.Position().y + (target.y - object.Position().y) / length * dt * .75f};
+        if (!Blocked(next))
+        {
+            Point delta = Iso({next.x - object.Position().x, next.y - object.Position().y});
+            object.direction = std::abs(delta.x) > std::abs(delta.y) ? (delta.x > 0 ? 1 : 3)
+                                                                     : (delta.y > 0 ? 0 : 2);
+            object.SetPosition(next);
+            object.phase += dt * 7;
+            object.moving = true;
+        }
+    }
+
+    void UpdateAnimal(Animal& animal, float dt)
+    {
+        Profiler::Scope profile("ai.animal_update");
+        Point target = {animal.home.x + std::sin(time * .23f + animal.species) * 2.5f,
+                        animal.home.y + std::cos(time * .19f + animal.phase * .02f) * 2.f};
+        bool flee = Distance(animal.Position(), player.Position()) < 3.8f;
+        if (flee)
+        {
+            target = {animal.Position().x + (animal.Position().x - player.Position().x) * 2,
+                      animal.Position().y + (animal.Position().y - player.Position().y) * 2};
+        }
+
+        float length = Distance(animal.Position(), target);
+        if (length < .1f)
+        {
+            return;
+        }
+
+        float speed = flee ? 3.5f : 1.05f;
+        Point next = {animal.Position().x + (target.x - animal.Position().x) / length * dt * speed,
+                      animal.Position().y + (target.y - animal.Position().y) / length * dt * speed};
+        // Axis sliding keeps animals off water and out of buildings/trees.
+        Point previous = animal.Position();
+        Point position = previous;
+        if (!Blocked({next.x, animal.Position().y}))
+        {
+            position.x = next.x;
+        }
+
+        if (!Blocked({position.x, next.y}))
+        {
+            position.y = next.y;
+        }
+
+        animal.SetPosition(position);
+        if (Distance(previous, animal.Position()) > .001f)
+        {
+            animal.phase += dt * (flee ? 13.f : 6.f);
+            Point delta = Iso({animal.Position().x - previous.x, animal.Position().y - previous.y});
+            if (std::abs(delta.x) > .001f)
+            {
+                animal.facing = delta.x;
+            }
+        }
     }
 
     void Person(Point p,
@@ -664,9 +870,9 @@ struct TutorialGame::Impl
         renderer.DrawCharacter(p, variant, direction, frame, isPlayer);
     }
 
-    void DrawObject(const Object& o)
+    void DrawObject(const TutorialActor& o, const SceneView& view)
     {
-        Point p = Screen(o.p);
+        Point p = view.Screen(o);
         if (p.x < -200 || p.x > 1480 || p.y < -100 || p.y > 1080)
         {
             return;
@@ -678,20 +884,15 @@ struct TutorialGame::Impl
         }
         else if (o.kind == Kind::Tree)
         {
-            float alpha = Distance(player, o.p) < 2.5f ? .38f : 1.f;
+            float alpha = Distance(player.Position(), o.Position()) < 2.5f ? .38f : 1.f;
             renderer.DrawTree(p, o.variant, alpha);
         }
         else if (o.kind == Kind::House)
         {
-            Point ps = Screen(player);
+            Point ps = Screen(player.Position());
             float alpha =
                 (std::abs(ps.x - p.x) < 100 && ps.y < p.y + 25 && ps.y > p.y - 145) ? .4f : 1.f;
             renderer.DrawHouse(p, o.variant, alpha);
-        }
-        else if (o.kind == Kind::Beast)
-        {
-            const Animal& animal = animals[o.variant];
-            renderer.DrawAnimal(p, animal.species, animal.phase, animal.facing);
         }
         else if (o.kind == Kind::Bonfire)
         {
@@ -703,7 +904,6 @@ struct TutorialGame::Impl
 
             Line({p.x - 14, p.y + 3}, {p.x + 12, p.y - 4}, C(.23f, .14f, .075f));
             Line({p.x - 12, p.y - 4}, {p.x + 14, p.y + 3}, C(.23f, .14f, .075f));
-            renderer.DrawFire(p, 1.f);
         }
         else if (o.kind == Kind::Lamp)
         {
@@ -711,7 +911,6 @@ struct TutorialGame::Impl
             Glow({p.x, p.y - 66}, 65, C(1, .59f, .20f, .55f));
             Rect(p.x - 6, p.y - 74, 12, 17, C(.94f, .69f, .30f));
             Rect(p.x - 8, p.y - 77, 16, 4, C(.13f, .16f, .15f));
-            renderer.DrawFire({p.x, p.y - 59}, .55f);
         }
         else if (o.kind == Kind::Herb)
         {
@@ -740,7 +939,6 @@ struct TutorialGame::Impl
             Rect(p.x - 12, p.y - 45, 24, 45, C(.36f, .43f, .40f));
             Ellipse(p.x, p.y - 45, 12, 7, C(.43f, .48f, .42f));
             Glow({p.x, p.y - 25}, 55, C(.42f, .74f, .70f, .45f));
-            renderer.DrawFire({p.x, p.y - 40}, .65f, true);
             Poly({{p.x, p.y - 38}, {p.x + 5, p.y - 25}, {p.x, p.y - 17}, {p.x - 5, p.y - 25}},
                  C(.60f, .83f, .73f));
             if (quest == Quest::Return || quest == Quest::Complete)
@@ -783,6 +981,7 @@ struct TutorialGame::Impl
 
     void Hud()
     {
+        Profiler::Scope profile("ui.hud_build");
         Panel(28, 24, 620, 120);
         text.Draw(46, 34, L"잔향의 마을  /  마지막 한마디", gold, 1.1f);
         const wchar_t* objectives[] = {L"01  장의사 마라에게 다가가 E로 대화하기",
@@ -803,31 +1002,51 @@ struct TutorialGame::Impl
             Point v = Iso(p);
             return {1125 + v.x * .043f, 125 + v.y * .043f};
         };
-        for (const Object& o : objects)
+        for (Actor::Id id : objects)
         {
-            if (o.kind == Kind::Tree || o.kind == Kind::Lamp || o.kind == Kind::Bonfire)
+            auto* objectActor = static_cast<TutorialActor*>(scene.Find(id));
+            if (!objectActor)
             {
                 continue;
             }
 
-            Point p = mini(o.p);
+            const TutorialActor& o = *objectActor;
+            if (!o.IsVisible() || o.kind == Kind::Tree || o.kind == Kind::Lamp ||
+                o.kind == Kind::Bonfire)
+            {
+                continue;
+            }
+
+            Point p = mini(o.Position());
             Ellipse(p.x, p.y, o.kind == Kind::House ? 4.f : 2.f, 2, C(.40f, .51f, .46f));
         }
 
         Tint(C(.14f, .38f, .42f));
-        glBegin(GL_TRIANGLE_FAN);
+        RenderQueue::Begin(GL_TRIANGLE_FAN);
         Point lake = mini({11, -6});
-        glVertex2f(lake.x, lake.y);
+        RenderQueue::Vertex(lake.x, lake.y);
         for (int i = 0; i <= 64; ++i)
         {
             Point edge = mini(WorldGeometry::LakeEdge(i * 2 * Pi / 64.f));
-            glVertex2f(edge.x, edge.y);
+            RenderQueue::Vertex(edge.x, edge.y);
         }
 
-        glEnd();
-        for (const Animal& animal : animals)
+        RenderQueue::End();
+        for (Actor::Id id : animals)
         {
-            Point p = mini(animal.p);
+            auto* animalActor = static_cast<Animal*>(scene.Find(id));
+            if (!animalActor)
+            {
+                continue;
+            }
+
+            const Animal& animal = *animalActor;
+            if (!animal.IsVisible())
+            {
+                continue;
+            }
+
+            Point p = mini(animal.Position());
             Ellipse(p.x, p.y, 1.8f, 1.8f, C(.71f, .51f, .29f));
         }
 
@@ -846,12 +1065,12 @@ struct TutorialGame::Impl
                  gold);
         }
 
-        Point me = mini(player);
+        Point me = mini(player.Position());
         Ellipse(me.x, me.y, 4, 4, C(.90f, .95f, .89f));
         text.Draw(1012, 171, L"금색: 목적지   흰색: 나", ink, .7f);
         if (pages.empty() && !help)
         {
-            const Object* nearbyObject = Nearest();
+            const TutorialActor* nearbyObject = Nearest();
             if (nearbyObject)
             {
                 Panel(450, 622, 380, 48);
@@ -918,63 +1137,7 @@ struct TutorialGame::Impl
 
     void Render()
     {
-        renderer.BeginScene(camera, time);
-        Ground();
-        // Ground-only shadow pass prevents actors from receiving incorrectly overlaid blobs.
-        for (const Object& object : objects)
-        {
-            Point foot = Screen(object.p);
-            if (foot.x < -200 || foot.x > 1480 || foot.y < -100 || foot.y > 1000)
-            {
-                continue;
-            }
-
-            if (object.kind == Kind::House)
-            {
-                renderer.DrawShadow(foot, 82, 135);
-            }
-            else if (object.kind == Kind::Tree)
-            {
-                renderer.DrawShadow(foot, 22, 100);
-            }
-            else if (object.kind == Kind::Villager)
-            {
-                renderer.DrawShadow(foot, 13, 50);
-            }
-        }
-
-        renderer.DrawShadow(Screen(player), 13, 50);
-        for (const Animal& animal : animals)
-        {
-            renderer.DrawShadow(Screen(animal.p), 20, 22);
-        }
-
-        std::vector<Object> sorted = objects;
-        sorted.push_back({player, Kind::Villager, -1});
-        for (size_t i = 0; i < animals.size(); ++i)
-        {
-            sorted.push_back({animals[i].p, Kind::Beast, static_cast<int>(i)});
-        }
-
-        std::stable_sort(sorted.begin(),
-                         sorted.end(),
-                         [](const Object& a, const Object& b)
-                         { return a.p.x + a.p.y < b.p.x + b.p.y; });
-        for (const Object& o : sorted)
-        {
-            if (o.variant == -1)
-            {
-                Person(Screen(player), 0, true);
-            }
-            else
-            {
-                DrawObject(o);
-            }
-        }
-
-        Atmosphere();
-        renderer.Present();
-        Hud();
+        scene.Render({renderer, camera, time});
     }
 };
 

@@ -166,9 +166,16 @@
   <ItemGroup>
     <Text Include="..\TUTORIAL_LEVEL_DESIGN.txt" />
     <Text Include="..\LEVEL_ONE_DESIGN.txt" />
+    <Text Include="..\ACTOR_SCENE_GRAPH.txt" />
+    <Text Include="..\PERFORMANCE_PROFILING.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="RenderStats.h" />
+    <ClInclude Include="RenderQueue.h" />
+    <ClInclude Include="Profiler.h" />
+    <ClInclude Include="Actor.h" />
+    <ClInclude Include="SceneGraph.h" />
     <ClInclude Include="RenderAssets.h" />
     <ClInclude Include="WorldGeometry.h" />
     <ClInclude Include="AssetCache.h" />
@@ -184,6 +191,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="RenderStats.cpp" />
+    <ClCompile Include="RenderQueue.cpp" />
+    <ClCompile Include="Profiler.cpp" />
+    <ClCompile Include="Actor.cpp" />
+    <ClCompile Include="SceneGraph.cpp" />
     <ClCompile Include="RenderAssets.cpp" />
     <ClCompile Include="AssetCache.cpp" />
     <ClCompile Include="LevelOneMap.cpp" />

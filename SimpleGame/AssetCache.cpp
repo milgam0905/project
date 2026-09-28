@@ -4,6 +4,7 @@
 #endif
 #include <Windows.h>
 #include "AssetCache.h"
+#include "Profiler.h"
 #include <fstream>
 #include <iostream>
 #include <utility>
@@ -52,9 +53,11 @@ bool AssetCache::Load(const std::wstring& name,
                       int height,
                       std::vector<unsigned char>& rgba)
 {
+    Profiler::Scope profile("asset.disk_load");
     const std::wstring directory = Directory();
     if (directory.empty())
     {
+        Profiler::Count("asset.disk_cache_misses");
         return false;
     }
 
@@ -62,6 +65,7 @@ bool AssetCache::Load(const std::wstring& name,
     Header header = {};
     if (!stream.read(reinterpret_cast<char*>(&header), sizeof(header)))
     {
+        Profiler::Count("asset.disk_cache_misses");
         return false;
     }
 
@@ -71,6 +75,7 @@ bool AssetCache::Load(const std::wstring& name,
         header.height != static_cast<std::uint32_t>(height) || header.bytes != expected ||
         expected > 32u * 1024u * 1024u)
     {
+        Profiler::Count("asset.disk_cache_misses");
         return false;
     }
 
@@ -79,9 +84,12 @@ bool AssetCache::Load(const std::wstring& name,
         stream.peek() != std::char_traits<char>::eof() ||
         Checksum(loaded.data(), loaded.size()) != header.checksum)
     {
+        Profiler::Count("asset.disk_cache_misses");
         return false;
     }
 
+    Profiler::Count("asset.disk_cache_hits");
+    Profiler::Count("asset.disk_read_bytes", expected);
     rgba = std::move(loaded);
     std::wcout << L"[cache loaded] " << name << L"\n";
     return true;
@@ -89,6 +97,7 @@ bool AssetCache::Load(const std::wstring& name,
 
 void AssetCache::Save(const std::wstring& name, int width, int height, const void* rgba)
 {
+    Profiler::Scope profile("asset.disk_save");
     const std::wstring directory = Directory();
     if (directory.empty())
     {
@@ -115,11 +124,13 @@ void AssetCache::Save(const std::wstring& name, int width, int height, const voi
                                 MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
     {
         // Only this process's exact temporary cache file is removed on failure.
+        Profiler::Count("asset.disk_write_failures");
         DeleteFileW(temporary.c_str());
         std::cerr << "Could not persist model cache; next launch may regenerate assets.\n";
     }
     else
     {
+        Profiler::Count("asset.disk_write_bytes", count);
         std::wcout << L"[cache generated] " << name << L"\n";
     }
 }

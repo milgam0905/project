@@ -1,0 +1,150 @@
+Actor / SceneGraph 개발 기준
+===========================
+
+1. 목적과 범위
+
+화면에 배치되는 오브젝트는 Actor 또는 Actor 파생 클래스다.
+SceneGraph가 Actor를 소유하고 부모·자식 관계, 업데이트, 렌더 순서,
+활성화·표시 상태와 제거를 관리한다.
+첫 레벨과 --tutorial 모드에 모두 적용한다.
+
+Renderer는 여전히 실제 OpenGL 그리기와 텍스처/셰이더를 담당한다.
+GameMode는 입력, 퀘스트, 경험치 등 게임 규칙을 담당한다.
+별도의 오브젝트 복사본이나 프레임별 DrawEntry 목록은 만들지 않는다.
+
+2. 구성 파일
+
+SimpleGame/Actor.h, Actor.cpp
+  공통 ID, 이름, 부모/자식 조회, 로컬/월드 위치와 높이,
+  활성화·표시 상태, Update/Draw/DrawShadow 진입점.
+  파생 클래스에서 진입점을 재정의하거나 onUpdate/onDraw/onShadow를 사용한다.
+  Actor는 복사하지 않는다. 배치 초기 데이터와 런타임 Actor를 구별한다.
+
+SimpleGame/SceneGraph.h, SceneGraph.cpp
+  Spawn, Find, Reparent, Destroy, ClearChildren, Update, Render.
+  unique_ptr로 단독 소유하며 ID 인덱스로 빠르게 조회한다.
+  게임 모드가 관리하는 적/NPC/아이템 목록에는 ID만 보관한다.
+
+3. 실제 씬 구성
+
+첫 레벨
+Root
+  LevelOne
+    Terrain              지면, 길, 호수의 묶음 렌더링
+    Player
+      AttackEffect       플레이어 위치를 상속하는 공격 궤적
+    Scenery
+      Tree / Rock
+      Campfire
+        Flame            모닥불 위치 및 로컬 높이를 상속
+    Enemies
+      Enemy              전투 상태를 가진 Actor 파생 클래스
+    Loot
+      Potion / Coins     획득하면 씬 그래프에서 제거
+  HUD                    후처리 이후 그리는 화면 UI 묶음
+
+튜토리얼
+Root
+  Tutorial
+    Terrain
+    Player
+    Village
+      TutorialActor      집, 나무, 주민, 약초, 제단, 가로등, 모닥불
+        Flame            불꽃이 있는 오브젝트에만 생성
+    Wildlife
+      Animal             이동/도주 상태를 가진 Actor 파생 클래스
+    Atmosphere           안개와 비 묶음
+  HUD                    미니맵, 대화, 목적지 표식 등
+
+나무를 구성하는 원, 캐릭터 스프라이트 픽셀, HUD의 글자, 물의 개별 버텍스는
+각각 Actor가 아니다. 하나의 배치 단위 안에서 기존 배치 렌더링을 유지한다.
+
+4. 좌표 및 상태
+
+SetLocalPosition: 부모 기준 위치를 지정한다.
+Position: 부모 위치를 합산한 월드 위치를 반환한다.
+SetPosition: 주어진 월드 위치를 부모 기준 로컬 위치로 변환해 저장한다.
+SetLocalHeight / Height: 부모 높이를 합산해 화면상의 위쪽 변위를 만든다.
+SceneView::Screen(actor): 쿼터뷰 투영과 카메라, Actor 높이를 함께 반영한다.
+현재 변환은 2D 이동과 높이만 지원한다. 회전·스케일 계층은 아직 없다.
+
+HUD와 Atmosphere는 화면 좌표 배치 묶음이다. 해당 콜백에서는 위치를
+논리 화면 픽셀 오프셋으로 적용한다. 월드 Actor의 자식으로 UI를 붙이는
+경우 좌표 단위 변환을 별도로 정의해야 한다.
+Terrain 렌더 함수는 배치 Actor의 원점/높이를 받아 맵 로컬 정점을 투영한다.
+
+SetActive(false): 자신과 자손의 업데이트 및 렌더를 중단한다.
+SetVisible(false): 자신과 자손의 렌더만 숨기며 업데이트는 유지한다.
+예를 들어 사망한 적은 보이지 않아도 재생성 타이머를 계속 갱신한다.
+자식을 다시 켜더라도 부모가 꺼져 있으면 실효 상태는 꺼져 있다.
+
+5. 순회 및 렌더 순서
+
+Update는 부모에서 자식 순서로 프레임 시작 시점의 목록을 순회한다.
+콜백에서 생성한 Actor는 다음 Update부터 갱신한다.
+순회 중 Reparent한 경우 새 부모 기준 순회 순서는 다음 순회부터 반영한다.
+콜백 안에서 Update/Render를 재귀 호출하는 것은 허용하지 않는다.
+
+Render 순서:
+  Terrain -> 전체 World 그림자 -> 깊이 정렬된 World -> Effect
+  -> Renderer::Present 후처리 -> Interface
+
+깊이 값은 Project(Position()).y - Height() + depthBias를 사용한다.
+깊이가 같으면 생성 ID 순서로 정렬해 프레임 간 흔들림을 막는다.
+불꽃은 로컬 높이만큼 depthBias를 주어 본체와 같은 깊이에서 뒤이어 그린다.
+배치 Actor가 화면 밖이면 그리기만 생략한다. AI 갱신은 계속한다.
+큰 지형과 화면 전체 효과/HUD에는 cull = false를 사용한다.
+
+6. 생성, 부모 변경, 제거 예시
+
+Actor& group = scene.Spawn(scene.Root(), "Props");
+Actor& torch = scene.Spawn(group, "Torch");
+torch.SetLocalPosition({3.f, 4.f});
+Actor& flame = scene.Spawn(torch, "Flame");
+flame.SetLocalHeight(50.f);
+flame.depthBias = 50.f;
+
+const Actor::Id flameId = flame.GetId();
+if (Actor* actor = scene.Find(flameId))
+{
+    actor->SetVisible(false);
+}
+
+scene.Reparent(torch, anotherGroup); // 월드 위치/높이 유지가 기본값
+scene.Reparent(torch, anotherGroup, false); // 로컬 위치/높이 유지
+scene.Destroy(torch); // 자손도 함께 제거 예약
+
+Reparent는 자기 자신/자손 아래로 이동하는 순환과 다른 씬의 Actor를 거부한다.
+Destroy 직후부터 Find는 해당 ID에 nullptr를 반환한다.
+메모리 해제는 Update/Render의 안전한 경계 또는 ClearChildren에서 처리한다.
+순회 중에는 해제를 미루므로 다음 Actor의 포인터가 무효화되지 않는다.
+제거 이후 포인터/참조를 재사용하지 않는다. 장기 참조는 ID로 보관한다.
+게임 모드의 player/world/category 참조는 그 모드와 함께 사는 고정 노드다.
+이 고정 노드 자체를 런타임에 제거하는 경우에는 게임 모드도 재구성해야 한다.
+
+7. 유지한 기존 기능과 한계
+
+전투, 아이템, 경험치, 스탯, NPC 대화, 튜토리얼 퀘스트와 모델 캐시는 유지한다.
+N으로 첫 레벨을 재생성할 때 Scenery/Enemies/Loot 자손만 비우고 다시 생성한다.
+플레이어, HUD, 성장 상태는 유지한다. 튜토리얼 R은 모드 전체를 다시 만든다.
+
+씬 그래프는 물리 엔진이나 내비게이션 시스템이 아니다.
+첫 레벨의 지형 충돌/길찾기는 기존 LevelOneMap의 정적 셀 데이터를 사용한다.
+나무/바위 Actor를 임의로 옮기거나 비활성화해도 셀 충돌이 자동으로 바뀌지는 않는다.
+동적 장애물 편집을 구현할 때는 Actor 변경과 충돌/경로 데이터를 함께 갱신해야 한다.
+튜토리얼 건물/나무 충돌은 Actor 위치와 활성 상태를 조회한다.
+수면/맵 경계와 이동 목적지 데이터는 기존 게임 규칙을 유지한다.
+씬 저장/불러오기, 에디터, 동적 물리, 회전/스케일은 이번 범위에 포함하지 않는다.
+
+8. 사용자 빌드/실행 시 확인 항목
+
+- 첫 레벨: WASD, 공격/피격, 적 처치/재생성, E 아이템 획득, C 능력 배분.
+- 아이템 획득 후 화면/씬에서 사라지고 같은 아이템을 다시 획득할 수 없는지.
+- 나무/적/플레이어의 앞뒤 정렬, 그림자, 모닥불, 공격 궤적, 후처리와 HUD.
+- N으로 반복 재생성 후 이전 적/아이템/배경이 남거나 중복되지 않는지.
+- --tutorial: 주민/동물 이동, 대화/약초/제단/선택, 완료 후 R 재시작.
+- 부모 위치/높이 변경 시 자식 불꽃이 따라오고, 부모 숨김 시 함께 숨는지.
+- SetActive/SetVisible 차이, Reparent의 월드/로컬 위치 유지, 순환 방지.
+- 부모 제거 시 자손 ID도 Find로 조회되지 않고 다음 순회가 안전한지.
+
+빌드·게임 실행·시각 결과 검증은 사용자 수행 원칙을 따른다.

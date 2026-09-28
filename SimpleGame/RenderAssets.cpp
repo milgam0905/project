@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "RenderAssets.h"
 #include "AssetCache.h"
+#include "Profiler.h"
 #include <algorithm>
 #include <cmath>
 #include <vector>
@@ -29,6 +30,8 @@ namespace
 
     GLuint Upload(int w, int h, const void* data, bool repeat)
     {
+        Profiler::Scope profile("asset.texture_upload");
+        Profiler::Count("upload.texture_bytes", static_cast<std::uint64_t>(w) * h * 4);
         GLuint id = 0;
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_2D, id);
@@ -45,6 +48,7 @@ namespace
         std::vector<unsigned char> pixels;
         if (!AssetCache::Load(name, width, height, pixels))
         {
+            Profiler::Count("asset.procedural_generations");
             return 0;
         }
         return Upload(width, height, pixels.data(), repeat);
@@ -53,6 +57,7 @@ namespace
 
 GLuint RenderAssets::MakeMaterial(Material material)
 {
+    Profiler::Scope profile("asset.material_prepare");
     const int side = 256;
     const std::wstring cacheName = L"material_" + std::to_wstring(material);
     GLuint cached = LoadCached(cacheName, side, side, true);
@@ -133,6 +138,7 @@ GLuint RenderAssets::MakeMaterial(Material material)
 
 GLuint RenderAssets::MakeCharacterAtlas()
 {
+    Profiler::Scope profile("asset.character_atlas_prepare");
     const int width = 320, height = 2048;
     GLuint cached = LoadCached(L"characters", width, height, false);
     if (cached)
@@ -260,6 +266,7 @@ GLuint RenderAssets::MakeCharacterAtlas()
 
 GLuint RenderAssets::MakeModelAtlas()
 {
+    Profiler::Scope profile("asset.model_atlas_prepare");
     const int width = 512, height = ModelCount * 128;
     GLuint cached = LoadCached(L"level_one_models", width, height, false);
     if (cached)

@@ -5,6 +5,10 @@
 #include "UiText.h"
 #include "RenderAssets.h"
 #include "WorldGeometry.h"
+#include "RenderStats.h"
+#include "RenderQueue.h"
+#include "Profiler.h"
+#include "SceneGraph.h"
 #include <algorithm>
 #include <cmath>
 #include <random>
@@ -33,31 +37,35 @@ namespace
 
     void Box(float x, float y, float width, float height, Color color)
     {
-        glColor4f(color.r, color.g, color.b, color.a);
-        glBegin(GL_QUADS);
-        glVertex2f(x, y);
-        glVertex2f(x + width, y);
-        glVertex2f(x + width, y + height);
-        glVertex2f(x, y + height);
-        glEnd();
+        RenderQueue::Color(color.r, color.g, color.b, color.a);
+        RenderQueue::Begin(GL_QUADS);
+        RenderQueue::Vertex(x, y);
+        RenderQueue::Vertex(x + width, y);
+        RenderQueue::Vertex(x + width, y + height);
+        RenderQueue::Vertex(x, y + height);
+        RenderQueue::End();
     }
 
     void Ring(Point p, float rx, float ry, Color color)
     {
-        glColor4f(color.r, color.g, color.b, color.a);
-        glBegin(GL_LINE_LOOP);
+        RenderQueue::Color(color.r, color.g, color.b, color.a);
+        RenderQueue::Begin(GL_LINE_LOOP);
         for (int i = 0; i < 48; ++i)
         {
             float angle = i * WorldGeometry::Pi / 24.f;
-            glVertex2f(p.x + std::cos(angle) * rx, p.y + std::sin(angle) * ry);
+            RenderQueue::Vertex(p.x + std::cos(angle) * rx, p.y + std::sin(angle) * ry);
         }
 
-        glEnd();
+        RenderQueue::End();
     }
 
-    struct Enemy
+    struct Enemy : Actor
     {
-        Point p, home, waypoint;
+        Enemy() : Actor("Enemy")
+        {
+        }
+
+        Point home = {0, 0}, waypoint = {0, 0};
         int species = 0;
         int health = 32;
         float phase = 0;
@@ -74,9 +82,13 @@ namespace
         }
     };
 
-    struct Loot
+    struct Loot : Actor
     {
-        Point p;
+        Loot(bool potion, int amount)
+            : Actor(potion ? "Potion" : "Coins"), potion(potion), amount(amount)
+        {
+        }
+
         bool potion;
         int amount;
     };
@@ -86,12 +98,18 @@ struct LevelOneGame::Impl
 {
     Renderer renderer{1280, 800};
     UiText text;
+    SceneGraph scene;
+    Actor& world = scene.Spawn(scene.Root(), "LevelOne");
+    Actor& terrain = scene.Spawn(world, "Terrain");
+    Actor& player = scene.Spawn(world, "Player");
+    Actor& scenery = scene.Spawn(world, "Scenery");
+    Actor& enemyGroup = scene.Spawn(world, "Enemies");
+    Actor& lootGroup = scene.Spawn(world, "Loot");
     LevelOneMap map{NewSeed()};
     RpgStats stats;
-    Point player = LevelOneMap::Camp();
-    Point camera = WorldGeometry::Project(player);
-    std::vector<Enemy> enemies;
-    std::vector<Loot> loot;
+    Point camera = WorldGeometry::Project(LevelOneMap::Camp());
+    std::vector<Actor::Id> enemies;
+    std::vector<Actor::Id> loot;
     bool keys[256] = {};
     bool quit = false, statsOpen = false, help = true, dead = false, complete = false;
     float time = 0, stride = 0, attackTimer = 0, slashTimer = 0, hurtTimer = 0;
@@ -102,13 +120,8 @@ struct LevelOneGame::Impl
 
     Impl()
     {
+        SetupScene();
         Populate();
-    }
-
-    Point Screen(Point world) const
-    {
-        Point p = WorldGeometry::Project(world);
-        return {p.x - camera.x + 640, p.y - camera.y + 420};
     }
 
     void Message(const std::wstring& value)
@@ -117,24 +130,175 @@ struct LevelOneGame::Impl
         noticeTimer = 4.f;
     }
 
+    void SetupScene()
+    {
+        terrain.layer = ActorLayer::Terrain;
+        terrain.cull = false;
+        terrain.onDraw = [this](const Actor& actor, const SceneView&)
+        {
+            renderer.DrawHuntingTerrain(map, actor.Position(), actor.Height());
+        };
+
+        player.onUpdate = [this](Actor&, float dt)
+        {
+            UpdatePlayer(dt);
+        };
+        player.onDraw = [this](const Actor& actor, const SceneView& view)
+        {
+            if (hurtTimer <= 0 || static_cast<int>(time * 18) % 2 == 0)
+            {
+                renderer.DrawCharacter(view.Screen(actor),
+                                       7,
+                                       direction,
+                                       moving ? 1 + static_cast<int>(stride) % 7 : 0,
+                                       true);
+            }
+        };
+        player.onShadow = [](const Actor& actor, const SceneView& view)
+        {
+            view.renderer.DrawShadow(view.Screen(actor), 13, 50);
+        };
+
+        Actor& slash = scene.Spawn(player, "AttackEffect");
+        slash.layer = ActorLayer::Effect;
+        slash.SetLocalHeight(20);
+        slash.onDraw = [this](const Actor& actor, const SceneView& view)
+        {
+            if (slashTimer <= 0)
+            {
+                return;
+            }
+
+            Point p = view.Screen(actor);
+            RenderQueue::Color(.9f, .88f, .63f, slashTimer / .2f);
+            RenderQueue::Begin(GL_LINE_STRIP);
+            for (int i = 0; i <= 20; ++i)
+            {
+                float angle = slashAngle - 1 + i * .1f;
+                RenderQueue::Vertex(p.x + std::cos(angle) * 60, p.y + std::sin(angle) * 35);
+            }
+
+            RenderQueue::End();
+        };
+
+        Actor& hud = scene.Spawn(scene.Root(), "HUD");
+        hud.layer = ActorLayer::Interface;
+        hud.cull = false;
+        hud.onDraw = [this](const Actor& actor, const SceneView&)
+        {
+            const Point offset = actor.Position();
+            RenderQueue::PushMatrix();
+            RenderQueue::Translate(offset.x, offset.y - actor.Height(), 0);
+            Hud();
+            RenderQueue::PopMatrix();
+        };
+    }
+
+    void SpawnLoot(Point position, bool potion, int amount)
+    {
+        Loot& item = scene.Spawn<Loot>(lootGroup, potion, amount);
+        item.SetPosition(position);
+        item.onDraw = [this](const Actor& actor, const SceneView& view)
+        {
+            const Loot& item = static_cast<const Loot&>(actor);
+            Point p = view.Screen(item);
+            renderer.DrawCachedModel(
+                p, item.potion ? RenderAssets::Potion : RenderAssets::Coins, 0, 1);
+            if (Distance(player.Position(), item.Position()) < 1.5f)
+            {
+                Ring(p, 13, 7, C(.92f, .78f, .35f));
+            }
+        };
+        loot.push_back(item.GetId());
+    }
+
     void Populate()
     {
+        Profiler::Scope profile("world.populate");
+        renderer.PrepareHuntingMap(map);
+        // IDs never own actors. Reset category indexes when rebuilding the map.
         enemies.clear();
         loot.clear();
+        scene.ClearChildren(scenery);
+        scene.ClearChildren(enemyGroup);
+        scene.ClearChildren(lootGroup);
+
+        for (int y = 0; y < LevelOneMap::Height; ++y)
+        {
+            for (int x = 0; x < LevelOneMap::Width; ++x)
+            {
+                const auto tile = map.At(x, y);
+                if (tile != LevelOneMap::Tile::Tree && tile != LevelOneMap::Tile::Rock)
+                {
+                    continue;
+                }
+
+                const bool tree = tile == LevelOneMap::Tile::Tree;
+                Actor& prop = scene.Spawn(scenery, tree ? "Tree" : "Rock");
+                prop.SetPosition({x + .5f, y + .5f});
+                prop.onShadow = [tree](const Actor& actor, const SceneView& view)
+                {
+                    view.renderer.DrawShadow(view.Screen(actor), tree ? 20.f : 24.f, 50);
+                };
+                prop.onDraw = [this, tree](const Actor& actor, const SceneView& view)
+                {
+                    float alpha =
+                        tree && Distance(player.Position(), actor.Position()) < 2.f ? .4f : 1.f;
+                    renderer.DrawCachedModel(view.Screen(actor),
+                                             tree ? RenderAssets::ForestTree
+                                                  : RenderAssets::Boulder,
+                                             0,
+                                             1,
+                                             alpha);
+                };
+            }
+        }
+
         const auto& positions = map.SpawnCells();
         for (size_t i = 0; i < 14 && i < positions.size(); ++i)
         {
-            Enemy enemy;
-            enemy.p = enemy.home = enemy.waypoint = positions[i];
+            Enemy& enemy = scene.Spawn<Enemy>(enemyGroup);
+            enemy.SetPosition(positions[i]);
+            enemy.home = enemy.waypoint = positions[i];
             enemy.species = static_cast<int>(i % 2);
             enemy.health = enemy.MaxHealth();
-            enemies.push_back(enemy);
+            enemy.onUpdate = [this](Actor& actor, float dt)
+            {
+                if (!help && !statsOpen && !dead)
+                {
+                    UpdateEnemy(static_cast<Enemy&>(actor), dt);
+                }
+            };
+            enemy.onShadow = [](const Actor& actor, const SceneView& view)
+            {
+                view.renderer.DrawShadow(view.Screen(actor), 20, 24);
+            };
+            enemy.onDraw = [this](const Actor& actor, const SceneView& view)
+            {
+                DrawEnemy(static_cast<const Enemy&>(actor), view);
+            };
+            enemies.push_back(enemy.GetId());
         }
 
         Point camp = LevelOneMap::Camp();
-        loot.push_back({{camp.x + 1.5f, camp.y}, true, 1});
-        player = camp;
-        camera = WorldGeometry::Project(player);
+        Actor& campfire = scene.Spawn(scenery, "Campfire");
+        campfire.SetPosition({camp.x - 1.2f, camp.y - .8f});
+        campfire.onDraw = [](const Actor& actor, const SceneView& view)
+        {
+            view.renderer.DrawCachedModel(view.Screen(actor), RenderAssets::Campfire, 0, 1);
+        };
+        Actor& flame = scene.Spawn(campfire, "Flame");
+        flame.SetLocalHeight(10);
+        // Match the parent's depth while retaining the flame's local height.
+        flame.depthBias = 10;
+        flame.onDraw = [](const Actor& actor, const SceneView& view)
+        {
+            view.renderer.DrawFire(view.Screen(actor), 1.f);
+        };
+
+        SpawnLoot({camp.x + 1.5f, camp.y}, true, 1);
+        player.SetPosition(camp);
+        camera = WorldGeometry::Project(player.Position());
         ClearKeys();
     }
 
@@ -143,8 +307,9 @@ struct LevelOneGame::Impl
         std::fill(keys, keys + 256, false);
     }
 
-    bool Move(Point& position, Point desired)
+    bool Move(Actor& actor, Point desired)
     {
+        Point position = actor.Position();
         const Point previous = position;
         if (map.Walkable({desired.x, position.y}))
         {
@@ -156,12 +321,14 @@ struct LevelOneGame::Impl
             position.y = desired.y;
         }
 
+        actor.SetPosition(position);
         return Distance(position, previous) > .0001f;
     }
 
     void Attack()
     {
-        if (help || statsOpen || dead || attackTimer > 0)
+        Profiler::Scope profile("game.combat");
+        if (!player.IsActive() || help || statsOpen || dead || attackTimer > 0)
         {
             return;
         }
@@ -175,10 +342,18 @@ struct LevelOneGame::Impl
         // Nearest visible melee target: keyboard and mouse attack share this rule.
         Enemy* target = nullptr;
         float nearestDistance = 1.85f;
-        for (Enemy& enemy : enemies)
+        for (Actor::Id id : enemies)
         {
-            float distance = Distance(player, enemy.p);
-            if (enemy.health > 0 && distance < nearestDistance && map.ClearSegment(player, enemy.p))
+            auto* enemyActor = static_cast<Enemy*>(scene.Find(id));
+            if (!enemyActor)
+            {
+                continue;
+            }
+
+            Enemy& enemy = *enemyActor;
+            float distance = Distance(player.Position(), enemy.Position());
+            if (enemy.IsActive() && enemy.health > 0 && distance < nearestDistance &&
+                map.ClearSegment(player.Position(), enemy.Position()))
             {
                 nearestDistance = distance;
                 target = &enemy;
@@ -190,7 +365,8 @@ struct LevelOneGame::Impl
             return;
         }
 
-        Point delta = WorldGeometry::Project({target->p.x - player.x, target->p.y - player.y});
+        Point delta = WorldGeometry::Project({target->Position().x - player.Position().x,
+                                              target->Position().y - player.Position().y});
         slashAngle = std::atan2(delta.y, delta.x);
         direction =
             std::abs(delta.x) > std::abs(delta.y) ? (delta.x > 0 ? 1 : 3) : (delta.y > 0 ? 0 : 2);
@@ -200,14 +376,15 @@ struct LevelOneGame::Impl
         if (target->health == 0)
         {
             ++kills;
+            target->SetVisible(false);
             target->windup = 0;
             target->respawnTimer = 18.f;
             const int gainedXp = target->species == 0 ? 25 : 40;
             int gainedLevels = stats.GainExperience(gainedXp);
-            loot.push_back({target->p, false, target->species == 0 ? 4 : 7});
+            SpawnLoot(target->Position(), false, target->species == 0 ? 4 : 7);
             if (kills % 3 == 0)
             {
-                loot.push_back({target->p, true, 1});
+                SpawnLoot(target->Position(), true, 1);
             }
 
             Message(gainedLevels > 0
@@ -218,7 +395,8 @@ struct LevelOneGame::Impl
 
     void Interact()
     {
-        if (help || statsOpen || dead)
+        Profiler::Scope profile("game.interaction");
+        if (!player.IsActive() || help || statsOpen || dead)
         {
             return;
         }
@@ -226,17 +404,26 @@ struct LevelOneGame::Impl
         int found = 0;
         for (auto it = loot.begin(); it != loot.end();)
         {
-            if (Distance(player, it->p) < 1.5f && map.ClearSegment(player, it->p))
+            auto* item = static_cast<Loot*>(scene.Find(*it));
+            if (!item)
             {
-                if (it->potion)
+                it = loot.erase(it);
+                continue;
+            }
+
+            if (item->IsActive() && Distance(player.Position(), item->Position()) < 1.5f &&
+                map.ClearSegment(player.Position(), item->Position()))
+            {
+                if (item->potion)
                 {
-                    stats.potions += it->amount;
+                    stats.potions += item->amount;
                 }
                 else
                 {
-                    stats.gold += it->amount;
+                    stats.gold += item->amount;
                 }
 
+                scene.Destroy(*item);
                 it = loot.erase(it);
                 ++found;
             }
@@ -250,7 +437,7 @@ struct LevelOneGame::Impl
         {
             Message(L"주변 전리품을 획득했습니다. 회복약은 Q로 사용합니다.");
         }
-        else if (Distance(player, LevelOneMap::Camp()) < 2.5f)
+        else if (Distance(player.Position(), LevelOneMap::Camp()) < 2.5f)
         {
             stats.health = stats.MaxHealth();
             Message(L"야영지에서 휴식했습니다. 체력을 모두 회복합니다.");
@@ -263,7 +450,8 @@ struct LevelOneGame::Impl
 
     void UsePotion()
     {
-        if (dead || help || statsOpen || stats.potions == 0 || stats.health == stats.MaxHealth())
+        if (!player.IsActive() || dead || help || statsOpen || stats.potions == 0 ||
+            stats.health == stats.MaxHealth())
         {
             return;
         }
@@ -272,106 +460,122 @@ struct LevelOneGame::Impl
         Message(L"회복약 사용: 체력 +45");
     }
 
-    void UpdateEnemies(float dt)
+    void UpdateEnemy(Enemy& enemy, float dt)
     {
-        for (Enemy& enemy : enemies)
+        Profiler::Scope profile("ai.enemy_update");
+        enemy.hurtFlash = std::max(0.f, enemy.hurtFlash - dt);
+        if (enemy.health == 0)
         {
-            enemy.hurtFlash = std::max(0.f, enemy.hurtFlash - dt);
-            if (enemy.health == 0)
+            enemy.respawnTimer -= dt;
+            if (enemy.respawnTimer <= 0 && Distance(player.Position(), enemy.home) > 5.f)
             {
-                enemy.respawnTimer -= dt;
-                if (enemy.respawnTimer <= 0 && Distance(player, enemy.home) > 5.f)
-                {
-                    enemy.p = enemy.home;
-                    enemy.health = enemy.MaxHealth();
-                    enemy.cooldown = 1.f;
-                    enemy.pathTimer = 0;
-                }
-
-                continue;
+                enemy.SetPosition(enemy.home);
+                enemy.SetVisible(true);
+                enemy.health = enemy.MaxHealth();
+                enemy.cooldown = 1.f;
+                enemy.pathTimer = 0;
             }
 
-            enemy.cooldown = std::max(0.f, enemy.cooldown - dt);
-            float distance = Distance(player, enemy.p);
-            bool chase = distance < 8.f && Distance(player, LevelOneMap::Camp()) > 3.f;
+            return;
+        }
 
-            if (enemy.windup > 0)
+        enemy.cooldown = std::max(0.f, enemy.cooldown - dt);
+        float distance = Distance(player.Position(), enemy.Position());
+        bool chase = distance < 8.f && Distance(player.Position(), LevelOneMap::Camp()) > 3.f;
+
+        if (enemy.windup > 0)
+        {
+            enemy.windup = std::max(0.f, enemy.windup - dt);
+            if (enemy.windup == 0)
             {
-                enemy.windup = std::max(0.f, enemy.windup - dt);
-                if (enemy.windup == 0)
+                if (chase && distance < 1.35f &&
+                    map.ClearSegment(enemy.Position(), player.Position()) && hurtTimer <= 0)
                 {
-                    if (chase && distance < 1.35f && map.ClearSegment(enemy.p, player) &&
-                        hurtTimer <= 0)
+                    int damage = std::max(1, (enemy.species == 0 ? 11 : 16) - stats.Defense());
+                    stats.health = std::max(0, stats.health - damage);
+                    hurtTimer = .55f;
+                    if (stats.health == 0)
                     {
-                        int damage = std::max(1, (enemy.species == 0 ? 11 : 16) - stats.Defense());
-                        stats.health = std::max(0, stats.health - damage);
-                        hurtTimer = .55f;
-                        if (stats.health == 0)
-                        {
-                            dead = true;
-                            ClearKeys();
-                            return;
-                        }
-                    }
-
-                    enemy.cooldown = 1.25f;
-                }
-
-                continue;
-            }
-
-            if (chase && distance < 1.15f && map.ClearSegment(enemy.p, player))
-            {
-                if (enemy.cooldown <= 0)
-                {
-                    enemy.windup = .45f;
-                }
-
-                continue;
-            }
-
-            Point destination = chase ? player : enemy.home;
-            if (Distance(enemy.p, destination) < .15f)
-            {
-                continue;
-            }
-
-            enemy.pathTimer -= dt;
-            if (enemy.pathTimer <= 0 || Distance(enemy.p, enemy.waypoint) < .12f)
-            {
-                enemy.waypoint = map.NextStep(enemy.p, destination);
-                enemy.pathTimer = .4f;
-            }
-
-            float length = Distance(enemy.p, enemy.waypoint);
-            if (length > .01f)
-            {
-                float step = std::min(length, dt * (enemy.species == 0 ? 1.8f : 1.35f));
-                Point previous = enemy.p;
-                Point desired = {enemy.p.x + (enemy.waypoint.x - enemy.p.x) / length * step,
-                                 enemy.p.y + (enemy.waypoint.y - enemy.p.y) / length * step};
-                if (Move(enemy.p, desired))
-                {
-                    enemy.phase += dt * 9;
-                    Point delta =
-                        WorldGeometry::Project({enemy.p.x - previous.x, enemy.p.y - previous.y});
-                    if (std::abs(delta.x) > .001f)
-                    {
-                        enemy.facing = delta.x;
+                        dead = true;
+                        ClearKeys();
+                        return;
                     }
                 }
-                else
+
+                enemy.cooldown = 1.25f;
+            }
+
+            return;
+        }
+
+        if (chase && distance < 1.15f && map.ClearSegment(enemy.Position(), player.Position()))
+        {
+            if (enemy.cooldown <= 0)
+            {
+                enemy.windup = .45f;
+            }
+
+            return;
+        }
+
+        Point destination = chase ? player.Position() : enemy.home;
+        if (Distance(enemy.Position(), destination) < .15f)
+        {
+            return;
+        }
+
+        enemy.pathTimer -= dt;
+        if (enemy.pathTimer <= 0 || Distance(enemy.Position(), enemy.waypoint) < .12f)
+        {
+            enemy.waypoint = map.NextStep(enemy.Position(), destination);
+            enemy.pathTimer = .4f;
+        }
+
+        float length = Distance(enemy.Position(), enemy.waypoint);
+        if (length > .01f)
+        {
+            float step = std::min(length, dt * (enemy.species == 0 ? 1.8f : 1.35f));
+            Point previous = enemy.Position();
+            Point desired = {
+                enemy.Position().x + (enemy.waypoint.x - enemy.Position().x) / length * step,
+                enemy.Position().y + (enemy.waypoint.y - enemy.Position().y) / length * step};
+            if (Move(enemy, desired))
+            {
+                enemy.phase += dt * 9;
+                Point delta = WorldGeometry::Project(
+                    {enemy.Position().x - previous.x, enemy.Position().y - previous.y});
+                if (std::abs(delta.x) > .001f)
                 {
-                    enemy.pathTimer = 0;
+                    enemy.facing = delta.x;
                 }
+            }
+            else
+            {
+                enemy.pathTimer = 0;
             }
         }
     }
 
     void Update(float dt)
     {
+        Profiler::Gauge("game.paused", help || statsOpen || dead ? 1 : 0);
+        Profiler::Gauge("game.loot_count", static_cast<double>(loot.size()));
         time += dt;
         noticeTimer = std::max(0.f, noticeTimer - dt);
+        scene.Update(dt);
+
+        if (!help && !statsOpen && !dead)
+        {
+            Point target = WorldGeometry::Project(player.Position());
+            float smoothing = 1 - std::exp(-dt * 8);
+            camera.x += (target.x - camera.x) * smoothing;
+            camera.y += (target.y - camera.y) * smoothing;
+        }
+    }
+
+    void UpdatePlayer(float dt)
+    {
+        Profiler::Scope profile("game.player_update");
         moving = false;
         if (help || statsOpen || dead)
         {
@@ -388,8 +592,8 @@ struct LevelOneGame::Impl
         {
             sx /= length;
             sy /= length;
-            Point next = {player.x + (sx / 84 + sy / 42) * 145 * dt,
-                          player.y + (-sx / 84 + sy / 42) * 145 * dt};
+            Point next = {player.Position().x + (sx / 84 + sy / 42) * 145 * dt,
+                          player.Position().y + (-sx / 84 + sy / 42) * 145 * dt};
             moving = Move(player, next);
             if (moving)
             {
@@ -403,12 +607,6 @@ struct LevelOneGame::Impl
         {
             Attack();
         }
-
-        UpdateEnemies(dt);
-        Point target = WorldGeometry::Project(player);
-        float smoothing = 1 - std::exp(-dt * 8);
-        camera.x += (target.x - camera.x) * smoothing;
-        camera.y += (target.y - camera.y) * smoothing;
     }
 
     void Panel(float x, float y, float width, float height)
@@ -419,6 +617,7 @@ struct LevelOneGame::Impl
 
     void Hud()
     {
+        Profiler::Scope profile("ui.hud_build");
         const Color ink = C(.85f, .88f, .82f), gold = C(.9f, .72f, .4f);
         Panel(24, 20, 690, 132);
         text.Draw(42, 29, L"레벨 1 · 잿빛 사냥터", gold, 1.15f);
@@ -466,28 +665,29 @@ struct LevelOneGame::Impl
         // Full-map overview: enemy locations stay discoverable even behind terrain.
         Panel(1000, 20, 253, 236);
         text.Draw(1014, 29, L"사냥터 · 금색: 야영지", gold, .78f);
-        for (int y = 0; y < LevelOneMap::Height; ++y)
-        {
-            for (int x = 0; x < LevelOneMap::Width; ++x)
-            {
-                Color color = map.At(x, y) == LevelOneMap::Tile::Ground  ? C(.20f, .28f, .23f)
-                              : map.At(x, y) == LevelOneMap::Tile::Water ? C(.12f, .31f, .37f)
-                                                                         : C(.09f, .14f, .12f);
-                Box(1019 + x * 5.f, 65 + y * 4.5f, 5, 4.5f, color);
-            }
-        }
+        renderer.DrawMinimap(1019, 65, LevelOneMap::Width * 5.f, LevelOneMap::Height * 4.5f);
 
-        auto dot = [&](Point p, Color color) { Box(1017 + p.x * 5, 63 + p.y * 4.5f, 5, 5, color); };
-        for (const Enemy& enemy : enemies)
+        auto dot = [&](Point p, Color color)
         {
-            if (enemy.health > 0)
+            Box(1017 + p.x * 5, 63 + p.y * 4.5f, 5, 5, color);
+        };
+        for (Actor::Id id : enemies)
+        {
+            auto* enemyActor = static_cast<Enemy*>(scene.Find(id));
+            if (!enemyActor)
             {
-                dot(enemy.p, C(.8f, .33f, .22f));
+                continue;
+            }
+
+            Enemy& enemy = *enemyActor;
+            if (enemy.IsVisible() && enemy.health > 0)
+            {
+                dot(enemy.Position(), C(.8f, .33f, .22f));
             }
         }
 
         dot(LevelOneMap::Camp(), gold);
-        dot(player, ink);
+        dot(player.Position(), ink);
         text.Draw(1012, 228, L"시드 " + std::to_wstring(map.Seed()), ink, .62f);
 
         if (noticeTimer > 0)
@@ -495,7 +695,8 @@ struct LevelOneGame::Impl
             Panel(180, 597, 950, 49);
             text.Draw(200, 608, notice, gold, .85f);
         }
-        else if (Distance(player, LevelOneMap::Camp()) < 2.5f && !help && !statsOpen && !dead)
+        else if (Distance(player.Position(), LevelOneMap::Camp()) < 2.5f && !help && !statsOpen &&
+                 !dead)
         {
             text.Draw(410, 613, L"E 휴식 / 주변 획득   N 새 사냥터 (능력·소지품 유지)", gold, .8f);
         }
@@ -562,145 +763,25 @@ struct LevelOneGame::Impl
         }
     }
 
+    void DrawEnemy(const Enemy& enemy, const SceneView& view)
+    {
+        Point p = view.Screen(enemy);
+        renderer.DrawCachedModel(p,
+                                 enemy.species == 0 ? RenderAssets::Wolf : RenderAssets::Boar,
+                                 static_cast<int>(enemy.phase) % 4,
+                                 enemy.facing,
+                                 enemy.hurtFlash > 0 ? .55f : 1.f);
+        Box(p.x - 22, p.y - 51, 44, 4, C(.17f, .07f, .07f));
+        Box(p.x - 22, p.y - 51, 44.f * enemy.health / enemy.MaxHealth(), 4, C(.73f, .29f, .19f));
+        if (enemy.windup > 0)
+        {
+            Ring(p, 40, 20, C(1, .25f, .12f, .8f));
+        }
+    }
+
     void Render()
     {
-        renderer.BeginScene(camera, time);
-        renderer.DrawHuntingTerrain(map);
-
-        struct DrawEntry
-        {
-            Point p;
-            int kind;
-            int index;
-        };
-
-        std::vector<DrawEntry> entries;
-        for (int y = 0; y < LevelOneMap::Height; ++y)
-        {
-            for (int x = 0; x < LevelOneMap::Width; ++x)
-            {
-                auto tile = map.At(x, y);
-                if (tile != LevelOneMap::Tile::Tree && tile != LevelOneMap::Tile::Rock)
-                {
-                    continue;
-                }
-
-                Point world = {x + .5f, y + .5f}, p = Screen(world);
-                if (p.x < -150 || p.x > 1430 || p.y < -100 || p.y > 980)
-                {
-                    continue;
-                }
-
-                renderer.DrawShadow(p, tile == LevelOneMap::Tile::Tree ? 20.f : 24.f, 50);
-                entries.push_back({world,
-                                   0,
-                                   tile == LevelOneMap::Tile::Tree ? RenderAssets::ForestTree
-                                                                   : RenderAssets::Boulder});
-            }
-        }
-
-        for (size_t i = 0; i < enemies.size(); ++i)
-        {
-            if (enemies[i].health <= 0)
-            {
-                continue;
-            }
-
-            renderer.DrawShadow(Screen(enemies[i].p), 20, 24);
-            entries.push_back({enemies[i].p, 1, static_cast<int>(i)});
-        }
-
-        for (size_t i = 0; i < loot.size(); ++i)
-        {
-            entries.push_back({loot[i].p, 2, static_cast<int>(i)});
-        }
-
-        renderer.DrawShadow(Screen(player), 13, 50);
-        entries.push_back({player, 3, 0});
-        Point camp = LevelOneMap::Camp();
-        entries.push_back({{camp.x - 1.2f, camp.y - .8f}, 4, 0});
-        std::stable_sort(entries.begin(),
-                         entries.end(),
-                         [](const DrawEntry& a, const DrawEntry& b)
-                         { return a.p.x + a.p.y < b.p.x + b.p.y; });
-
-        for (const DrawEntry& entry : entries)
-        {
-            Point p = Screen(entry.p);
-            if (p.x < -150 || p.x > 1430 || p.y < -100 || p.y > 980)
-            {
-                continue;
-            }
-
-            if (entry.kind == 0)
-            {
-                float alpha =
-                    entry.index == RenderAssets::ForestTree && Distance(player, entry.p) < 2.f
-                        ? .4f
-                        : 1.f;
-                renderer.DrawCachedModel(p, entry.index, 0, 1, alpha);
-            }
-            else if (entry.kind == 1)
-            {
-                const Enemy& enemy = enemies[entry.index];
-                renderer.DrawCachedModel(p,
-                                         enemy.species == 0 ? RenderAssets::Wolf
-                                                            : RenderAssets::Boar,
-                                         static_cast<int>(enemy.phase) % 4,
-                                         enemy.facing,
-                                         enemy.hurtFlash > 0 ? .55f : 1.f);
-                Box(p.x - 22, p.y - 51, 44, 4, C(.17f, .07f, .07f));
-                Box(p.x - 22,
-                    p.y - 51,
-                    44.f * enemy.health / enemy.MaxHealth(),
-                    4,
-                    C(.73f, .29f, .19f));
-                if (enemy.windup > 0)
-                {
-                    Ring(p, 40, 20, C(1, .25f, .12f, .8f));
-                }
-            }
-            else if (entry.kind == 2)
-            {
-                const Loot& item = loot[entry.index];
-                renderer.DrawCachedModel(
-                    p, item.potion ? RenderAssets::Potion : RenderAssets::Coins, 0, 1);
-                if (Distance(player, item.p) < 1.5f)
-                {
-                    Ring(p, 13, 7, C(.92f, .78f, .35f));
-                }
-            }
-            else if (entry.kind == 3)
-            {
-                if (hurtTimer <= 0 || static_cast<int>(time * 18) % 2 == 0)
-                {
-                    renderer.DrawCharacter(
-                        p, 7, direction, moving ? 1 + static_cast<int>(stride) % 7 : 0, true);
-                }
-            }
-            else
-            {
-                renderer.DrawCachedModel(p, RenderAssets::Campfire, 0, 1);
-                renderer.DrawFire({p.x, p.y - 10}, 1.f);
-            }
-        }
-
-        if (slashTimer > 0)
-        {
-            Point p = Screen(player);
-            glColor4f(.9f, .88f, .63f, slashTimer / .2f);
-            glBegin(GL_LINE_STRIP);
-            for (int i = 0; i <= 20; ++i)
-            {
-                float angle = slashAngle - 1 + i * .1f;
-                glVertex2f(p.x + std::cos(angle) * 60, p.y - 20 + std::sin(angle) * 35);
-            }
-
-            glEnd();
-        }
-
-        renderer.Present();
-        Hud();
+        scene.Render({renderer, camera, time});
     }
 };
 
@@ -765,8 +846,8 @@ void LevelOneGame::KeyDown(unsigned char key)
         {
             m->dead = false;
             m->stats.health = m->stats.MaxHealth();
-            m->player = LevelOneMap::Camp();
-            m->camera = WorldGeometry::Project(m->player);
+            m->player.SetPosition(LevelOneMap::Camp());
+            m->camera = WorldGeometry::Project(m->player.Position());
             m->hurtTimer = 1.5f;
             m->ClearKeys();
         }
@@ -837,7 +918,7 @@ void LevelOneGame::KeyDown(unsigned char key)
         m->quit = true;
     }
 
-    if (key == 'n' && Distance(m->player, LevelOneMap::Camp()) < 2.5f)
+    if (key == 'n' && Distance(m->player.Position(), LevelOneMap::Camp()) < 2.5f)
     {
         m->map = LevelOneMap(NewSeed());
         m->Populate();
