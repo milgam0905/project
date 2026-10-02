@@ -3,6 +3,7 @@
 #include "Profiler.h"
 #include <cassert>
 #include <cstddef>
+#include <cmath>
 
 namespace
 {
@@ -17,6 +18,8 @@ namespace
     };
 
     std::vector<V> primitive, vertices;
+    std::vector<V> lineVertices;
+    std::uint64_t merged = 0, runs = 0, textureSplits = 0, topologySplits = 0;
     std::vector<GLuint> indices;
     std::vector<Command> commands;
     V current = {0, 0, 0, 0, 1, 1, 1, 1};
@@ -104,6 +107,42 @@ void RenderQueue::End()
     assert(recording);
     recording = false;
     RenderStats::SourcePrimitive();
+    // One logical pixel wide ribbons retain painter order and share triangle batches.
+    if (topology == GL_LINES || topology == GL_LINE_LOOP || topology == GL_LINE_STRIP)
+    {
+        lineVertices.clear();
+        auto segment = [&](V a, V b)
+        {
+            const float dx = b.x - a.x, dy = b.y - a.y;
+            const float length = std::sqrt(dx * dx + dy * dy);
+            if (length < .00001f)
+            {
+                return;
+            }
+            const float nx = -dy / length * .5f, ny = dx / length * .5f;
+            V a0 = a, a1 = a, b0 = b, b1 = b;
+            a0.x += nx;
+            a0.y += ny;
+            b0.x += nx;
+            b0.y += ny;
+            a1.x -= nx;
+            a1.y -= ny;
+            b1.x -= nx;
+            b1.y -= ny;
+            lineVertices.insert(lineVertices.end(), {a0, b0, b1, a1});
+        };
+        const size_t step = topology == GL_LINES ? 2 : 1;
+        for (size_t i = 0; i + 1 < primitive.size(); i += step)
+        {
+            segment(primitive[i], primitive[i + 1]);
+        }
+        if (topology == GL_LINE_LOOP && primitive.size() > 1)
+        {
+            segment(primitive.back(), primitive.front());
+        }
+        primitive.swap(lineVertices);
+        topology = GL_QUADS;
+    }
     if (vertices.size() + primitive.size() > VertexLimit)
     {
         Profiler::Count("batch.flush_capacity");
@@ -179,17 +218,23 @@ void RenderQueue::End()
         commands.back().texture == material && commands.back().textured == textured)
     {
         commands.back().count += indices.size() - offset;
-        Profiler::Count("batch.merged_primitives");
+        ++merged;
     }
     else
     {
         if (!commands.empty())
         {
-            Profiler::Count(commands.back().topology != output ? "batch.split_topology"
-                                                               : "batch.split_texture");
+            if (commands.back().topology != output)
+            {
+                ++topologySplits;
+            }
+            else
+            {
+                ++textureSplits;
+            }
         }
         commands.push_back({output, material, textured, offset, indices.size() - offset});
-        Profiler::Count("batch.state_runs");
+        ++runs;
     }
 }
 
@@ -201,6 +246,11 @@ void RenderQueue::Flush()
         return;
     }
     Profiler::Scope scope("render.queue_flush");
+    Profiler::Count("batch.merged_primitives", merged);
+    Profiler::Count("batch.state_runs", runs);
+    Profiler::Count("batch.split_texture", textureSplits);
+    Profiler::Count("batch.split_topology", topologySplits);
+    merged = runs = textureSplits = topologySplits = 0;
     if (!vbo)
     {
         glGenBuffers(1, &vbo);
@@ -223,7 +273,8 @@ void RenderQueue::Flush()
     Profiler::Gauge("batch.retained_cpu_bytes",
                     static_cast<double>(
                         vertices.capacity() * sizeof(V) + indices.capacity() * sizeof(GLuint) +
-                        commands.capacity() * sizeof(Command) + primitive.capacity() * sizeof(V)));
+                        commands.capacity() * sizeof(Command) + primitive.capacity() * sizeof(V) +
+                        lineVertices.capacity() * sizeof(V)));
     {
         Profiler::Scope submitProfile("render.batch_submit");
         Arrays(vbo, ibo);

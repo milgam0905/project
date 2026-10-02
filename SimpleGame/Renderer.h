@@ -25,6 +25,7 @@ class Renderer
     void Resize(int width, int height);
     void BeginScene(RenderPoint projectedCamera, float time);
     void DrawTerrain(RenderPoint origin = {0, 0}, float elevation = 0);
+    void PrepareVillageAtlas();
     void PrepareHuntingMap(const LevelOneMap& map);
     void DrawMinimap(float x, float y, float width, float height);
     void DrawHuntingTerrain(const LevelOneMap& map,
@@ -43,6 +44,8 @@ class Renderer
     void DrawSolidRect(float x, float y, float z, float size, float r, float g, float b, float a);
 
   private:
+    void DrawVillageSprite(RenderPoint foot, int slot, float opacity, float sway = 0);
+    void DrawHouseSmoke(RenderPoint foot, float opacity);
     struct Impl;
     std::unique_ptr<Impl> m;
 };

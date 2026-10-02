@@ -168,6 +168,7 @@
     <Text Include="..\LEVEL_ONE_DESIGN.txt" />
     <Text Include="..\ACTOR_SCENE_GRAPH.txt" />
     <Text Include="..\PERFORMANCE_PROFILING.txt" />
+    <Text Include="..\docs\VILLAGE_TEST.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Renderer.h" />
@@ -178,6 +179,7 @@
     <ClInclude Include="SceneGraph.h" />
     <ClInclude Include="RenderAssets.h" />
     <ClInclude Include="WorldGeometry.h" />
+    <ClInclude Include="VillageBehavior.h" />
     <ClInclude Include="AssetCache.h" />
     <ClInclude Include="GameMode.h" />
     <ClInclude Include="LevelOneGame.h" />

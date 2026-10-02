@@ -12,6 +12,8 @@
 #include "Profiler.h"
 #include "WorldGeometry.h"
 #include "SceneGraph.h"
+#include "VillageBehavior.h"
+#include "RenderAssets.h"
 #include <algorithm>
 #include <cmath>
 #include <initializer_list>
@@ -25,6 +27,8 @@ namespace
     const float ViewW = 1280, ViewH = 800;
     using Point = RenderPoint;
     using Color = RenderColor;
+    using Action = VillageBehavior::Action;
+    using Role = VillageBehavior::Role;
 
     Color C(float r, float g, float b, float a = 1)
     {
@@ -68,10 +72,19 @@ namespace
         Tint(c);
         RenderQueue::Begin(GL_TRIANGLE_FAN);
         RenderQueue::Vertex(x, y);
-        for (int i = 0; i <= 32; ++i)
+        static const std::vector<Point> circle = []
         {
-            float a = i * Pi / 16;
-            RenderQueue::Vertex(x + std::cos(a) * rx, y + std::sin(a) * ry);
+            std::vector<Point> points;
+            for (int i = 0; i <= 32; ++i)
+            {
+                float angle = i * Pi / 16;
+                points.push_back({std::cos(angle), std::sin(angle)});
+            }
+            return points;
+        }();
+        for (const Point& unit : circle)
+        {
+            RenderQueue::Vertex(x + unit.x * rx, y + unit.y * ry);
         }
 
         RenderQueue::End();
@@ -135,6 +148,13 @@ namespace
         float phase = 0;
         int direction = 0;
         bool moving = false;
+        VillageBehavior::State brain;
+        VillageBehavior::Profile profile = {L"주민",
+                                            Role::Resident,
+                                            {50, 60, 15, 65, 35, 45, 65},
+                                            {0, 0},
+                                            {0, 0},
+                                            L"오늘도 살아갈 일이 남아 있지요."};
     };
 
     struct Animal : Actor
@@ -149,6 +169,9 @@ namespace
         int species;
         float phase;
         float facing = 1;
+        VillageBehavior::State brain;
+        float respawn = 0;
+        bool hostile = false;
     };
 
     struct Page
@@ -176,6 +199,11 @@ struct TutorialGame::Impl
     Quest quest = Quest::Meet;
     float time = 0, elapsed = 0, stride = 0;
     std::vector<Actor::Id> objects;
+    std::vector<Actor::Id> residents;
+    VillageBehavior::Navigation navigation;
+    float worldMinutes = 360, attackCooldown = 0, invulnerable = 0;
+    int playerHealth = 100, playerCoins = 30, defeated = 0;
+    bool populationRefill = true;
     Actor::Id elderId = 0, herbId = 0, shrineId = 0;
     std::vector<Page> pages;
     size_t page = 0;
@@ -184,6 +212,7 @@ struct TutorialGame::Impl
 
     Impl()
     {
+        renderer.PrepareVillageAtlas();
         SetupScene();
         const Placement placements[] = {
             {{-3, 0}, Kind::House, 0},      {{1, -4}, Kind::House, 1},
@@ -203,6 +232,26 @@ struct TutorialGame::Impl
             {{-1, -1}, Kind::Lamp, 0},      {{2, 5}, Kind::Lamp, 0},
             {{5, -6}, Kind::Lamp, 0}};
         for (const Placement& placement : placements)
+        {
+            SpawnObject(placement);
+        }
+
+        for (int i = 0; i < 20; ++i)
+        {
+            const auto& profile = VillageBehavior::NewResidents()[i];
+            SpawnObject({profile.home, Kind::Villager, i + 16});
+        }
+        const Placement outskirts[] = {{{-16, 9}, Kind::House, 1},
+                                       {{19, 9}, Kind::House, 2},
+                                       {{-22, 17}, Kind::House, 3},
+                                       {{23, 19}, Kind::House, 4},
+                                       {{-25, -20}, Kind::House, 5},
+                                       {{32, 25}, Kind::House, 6},
+                                       {{-35, 28}, Kind::House, 0},
+                                       {{35, -24}, Kind::House, 7},
+                                       {{25, 20}, Kind::Bonfire, 0},
+                                       {{-20, 14}, Kind::Lamp, 0}};
+        for (const auto& placement : outskirts)
         {
             SpawnObject(placement);
         }
@@ -239,12 +288,16 @@ struct TutorialGame::Impl
             animals.push_back(animal.GetId());
         }
         // Expand both world axes by two. Keep original short quest destinations intact.
-        for (int x = -27; x <= 27; ++x)
+        for (int x = -55; x <= 55; ++x)
         {
-            for (int y = -25; y <= 25; ++y)
+            for (int y = -51; y <= 51; ++y)
             {
                 Point p = {static_cast<float>(x), static_cast<float>(y)};
-                const int seed = (x + 40) * 139 + (y + 40) * 53;
+                const int seed = (x + 60) * 139 + (y + 60) * 53;
+                if ((std::abs(x) > 27 || std::abs(y) > 25) && (x % 2 || y % 2))
+                {
+                    continue;
+                }
                 if (seed % 7 || (std::abs(x) < 6 && std::abs(y) < 7) || Water(p))
                 {
                     continue;
@@ -304,6 +357,338 @@ struct TutorialGame::Impl
                 }
             }
         }
+        PrepareVillage();
+    }
+
+    void PrepareVillage()
+    {
+        Profiler::Scope scope("world.village_prepare");
+        std::vector<VillageBehavior::Navigation::Obstacle> obstacles;
+        for (Actor::Id id : objects)
+        {
+            auto* object = static_cast<TutorialActor*>(scene.Find(id));
+            if (!object)
+            {
+                continue;
+            }
+            if (object->kind == Kind::House)
+            {
+                obstacles.push_back({object->Position(), 1.35f, 1.15f});
+            }
+            else if (object->kind == Kind::Tree)
+            {
+                obstacles.push_back({object->Position(), .42f, .42f});
+            }
+        }
+        navigation.Build(obstacles);
+        for (Actor::Id id : residents)
+        {
+            auto* npc = static_cast<TutorialActor*>(scene.Find(id));
+            if (!npc)
+            {
+                continue;
+            }
+            npc->home = navigation.Safe(npc->home);
+            npc->profile.home = npc->home;
+            npc->profile.work = navigation.Safe(npc->profile.work);
+            npc->SetPosition(npc->home);
+            npc->brain.destination = npc->home;
+        }
+        for (Actor::Id id : animals)
+        {
+            auto* animal = static_cast<Animal*>(scene.Find(id));
+            if (animal)
+            {
+                animal->home = navigation.Safe(animal->home);
+                animal->SetPosition(animal->home);
+            }
+        }
+        // Fixed test population: 48 hostile beasts in three rings, never on the quest route.
+        for (int i = 0; i < 48; ++i)
+        {
+            float angle = i * 2.f * Pi / 16.f + (i / 16) * .19f;
+            float radius = 17.f + (i / 16) * 12.f;
+            Point home = navigation.Safe({std::cos(angle) * radius, std::sin(angle) * radius});
+            Animal& beast = scene.Spawn<Animal>(wildlife, home, i % 2, static_cast<float>(i));
+            beast.hostile = true;
+            beast.brain.health = 60;
+            beast.brain.decision = (i % 10) * .1f;
+            beast.onUpdate = [this](Actor& actor, float dt)
+            {
+                if (pages.empty() && !help)
+                {
+                    UpdateBeast(static_cast<Animal&>(actor), dt);
+                }
+            };
+            beast.onDraw = [](const Actor& actor, const SceneView& view)
+            {
+                const auto& beast = static_cast<const Animal&>(actor);
+                Point p = view.Screen(actor);
+                view.renderer.DrawCachedModel(p,
+                                              beast.species == 0 ? RenderAssets::Wolf
+                                                                 : RenderAssets::Boar,
+                                              static_cast<int>(beast.phase) % 4,
+                                              beast.facing);
+                Rect(p.x - 18, p.y - 53, 36, 4, C(.18f, .09f, .08f));
+                Rect(p.x - 18, p.y - 53, 36 * beast.brain.health / 60.f, 4, C(.75f, .25f, .15f));
+            };
+            beast.onShadow = [](const Actor& actor, const SceneView& view)
+            {
+                view.renderer.DrawShadow(view.Screen(actor), 23, 28);
+            };
+            animals.push_back(beast.GetId());
+        }
+        Profiler::Gauge("village.npc_count", static_cast<double>(residents.size()));
+        Profiler::Gauge("village.hostile_capacity", 48);
+    }
+
+    void MoveAgent(
+        Actor& actor, VillageBehavior::State& state, Point destination, float speed, float dt)
+    {
+        Profiler::Scope scope("ai.village_movement");
+        state.repath = std::max(0.f, state.repath - dt);
+        Point from = actor.Position();
+        float distance = Distance(from, destination);
+        if (distance < .12f)
+        {
+            return;
+        }
+        Point target = destination;
+        if (!navigation.Segment(from, destination))
+        {
+            int goal = navigation.Cell(destination);
+            if (state.repath <= 0 &&
+                (goal != state.goalCell || state.waypoint >= state.path.size()))
+            {
+                if (navigation.Route(from, destination, state.path))
+                {
+                    state.goalCell = goal;
+                    state.waypoint = 0;
+                    state.repath = 1.5f;
+                }
+            }
+            if (state.waypoint >= state.path.size())
+            {
+                return;
+            }
+            target = state.path[state.waypoint];
+            if (Distance(from, target) < .12f)
+            {
+                ++state.waypoint;
+                return;
+            }
+        }
+        distance = Distance(from, target);
+        float step = std::min(distance, speed * dt);
+        if (distance <= .001f)
+        {
+            return;
+        }
+        Point next = {from.x + (target.x - from.x) / distance * step,
+                      from.y + (target.y - from.y) / distance * step};
+        if (navigation.Segment(from, next))
+        {
+            actor.SetPosition(next);
+        }
+        else
+        {
+            state.path.clear();
+            state.goalCell = -1;
+        }
+    }
+
+    void DamagePlayer(int damage)
+    {
+        if (invulnerable > 0)
+        {
+            return;
+        }
+        playerHealth = std::max(0, playerHealth - damage);
+        invulnerable = .65f;
+        Profiler::Count("village.player_hits");
+        if (playerHealth == 0)
+        {
+            player.SetPosition({0, 3});
+            playerHealth = 100;
+            invulnerable = 5;
+            Profiler::Count("village.player_test_recoveries");
+        }
+    }
+
+    void DamageBeast(Animal& beast, float damage, bool reward)
+    {
+        if (beast.brain.health <= 0)
+        {
+            return;
+        }
+        beast.brain.health = std::max(0.f, beast.brain.health - damage);
+        if (beast.brain.health == 0)
+        {
+            beast.SetVisible(false);
+            beast.respawn = 25.f;
+            if (reward)
+            {
+                ++defeated;
+                playerCoins += 3;
+            }
+            Profiler::Count("village.beast_defeats");
+        }
+    }
+
+    void Subdue(TutorialActor& npc, float damage)
+    {
+        if (npc.brain.surrendered)
+        {
+            return;
+        }
+        npc.brain.health = std::max(15.f, npc.brain.health - damage);
+        npc.brain.memoryFear = 70;
+        npc.brain.decision = 0;
+        if (npc.brain.health <= 25)
+        {
+            npc.brain.surrendered = true;
+            npc.brain.action = Action::Surrender;
+            Profiler::Count("village.surrenders");
+        }
+    }
+
+    void Attack()
+    {
+        Profiler::Scope scope("game.village_combat");
+        if (attackCooldown > 0)
+        {
+            return;
+        }
+        attackCooldown = .45f;
+        Profiler::Count("village.player_attacks");
+        for (Actor::Id id : animals)
+        {
+            auto* beast = static_cast<Animal*>(scene.Find(id));
+            if (beast && beast->hostile && Distance(player.Position(), beast->Position()) < 2.1f &&
+                navigation.Segment(player.Position(), beast->Position()))
+            {
+                DamageBeast(*beast, 25, true);
+            }
+        }
+        for (Actor::Id id : residents)
+        {
+            auto* npc = static_cast<TutorialActor*>(scene.Find(id));
+            if (!npc || npc->profile.role != Role::Bandit || npc->brain.surrendered ||
+                Distance(player.Position(), npc->Position()) > 2.1f ||
+                !navigation.Segment(player.Position(), npc->Position()))
+            {
+                continue;
+            }
+            Subdue(*npc, 30);
+            npc->brain.threat = player.GetId();
+            npc->brain.threatMemory = 8;
+            npc->brain.lastThreatPosition = player.Position();
+        }
+    }
+
+    void UpdateBeast(Animal& beast, float dt)
+    {
+        Profiler::Scope scope("ai.village_beast_update");
+        auto& state = beast.brain;
+        if (state.health <= 0)
+        {
+            if (!populationRefill)
+            {
+                return;
+            }
+            beast.respawn -= dt;
+            if (beast.respawn <= 0 && Distance(player.Position(), beast.home) > 10)
+            {
+                beast.SetPosition(beast.home);
+                state = VillageBehavior::State{};
+                state.health = 60;
+                beast.SetVisible(true);
+                Profiler::Count("village.test_beast_respawns");
+            }
+            return;
+        }
+        state.cooldown = std::max(0.f, state.cooldown - dt);
+        state.decision -= dt;
+        if (state.decision <= 0)
+        {
+            state.decision = .25f;
+            bool seesPlayer = Distance(player.Position(), beast.Position()) < 6 &&
+                              Distance(player.Position(), beast.home) < 9 &&
+                              Distance(player.Position(), {0, 3}) > 12 &&
+                              navigation.Segment(beast.Position(), player.Position());
+            state.action = seesPlayer ? Action::Attack : Action::Wander;
+            if (seesPlayer)
+            {
+                state.destination = player.Position();
+            }
+            else
+            {
+                float angle = worldMinutes * .025f + static_cast<float>(beast.GetId());
+                state.destination = navigation.Safe(
+                    {beast.home.x + std::cos(angle) * 2, beast.home.y + std::sin(angle) * 2});
+            }
+            Profiler::Count("ai.village_beast_perceptions");
+        }
+        Point previous = beast.Position();
+        MoveAgent(beast, state, state.destination, state.action == Action::Attack ? 2.3f : .8f, dt);
+        if (Distance(previous, beast.Position()) > .001f)
+        {
+            beast.phase += dt * 7;
+            beast.facing =
+                Iso({beast.Position().x - previous.x, beast.Position().y - previous.y}).x;
+        }
+        if (state.action == Action::Attack && state.cooldown <= 0 &&
+            Distance(player.Position(), beast.Position()) < 1.25f &&
+            navigation.Segment(beast.Position(), player.Position()))
+        {
+            DamagePlayer(8);
+            state.cooldown = 1.3f;
+        }
+    }
+
+    void Service()
+    {
+        const TutorialActor* nearbyObject = Nearest();
+        if (!nearbyObject || nearbyObject->kind != Kind::Villager)
+        {
+            return;
+        }
+        auto* npc = static_cast<TutorialActor*>(scene.Find(nearbyObject->GetId()));
+        if (!npc || npc->brain.serviceCooldown > 0)
+        {
+            return;
+        }
+        auto& state = npc->brain;
+        if (npc->profile.role == Role::Merchant)
+        {
+            int price = npc->profile.traits.greed >= 75 ? 5 : 3;
+            if (state.food <= 0 || playerCoins < price)
+            {
+                Talk({{npc->profile.name,
+                       L"재고나 대금이 부족합니다.",
+                       L"이번 거래는 이루어지지 않았습니다."}});
+                return;
+            }
+            --state.food;
+            state.coins += price;
+            playerCoins -= price;
+            playerHealth = std::min(100, playerHealth + 20);
+            state.action = Action::Trade;
+            Profiler::Count("village.trades");
+        }
+        else if (npc->profile.role == Role::Healer && state.medicine > 0 && playerHealth < 100)
+        {
+            --state.medicine;
+            playerHealth = std::min(100, playerHealth + 35);
+            state.action = Action::Help;
+            Profiler::Count("village.heals");
+        }
+        else
+        {
+            return;
+        }
+        state.held = 0;
+        state.serviceCooldown = 3;
     }
 
     void SetupScene()
@@ -323,6 +708,11 @@ struct TutorialGame::Impl
         player.onDraw = [this](const Actor& actor, const SceneView& view)
         {
             Person(view.Screen(actor), 0, true);
+            if (attackCooldown > .25f)
+            {
+                Point p = view.Screen(actor);
+                Ellipse(p.x, p.y - 12, 55, 20, C(.95f, .75f, .32f, .18f));
+            }
         };
         player.onShadow = [](const Actor& actor, const SceneView& view)
         {
@@ -360,13 +750,70 @@ struct TutorialGame::Impl
             scene.Spawn<TutorialActor>(village, placement.kind, placement.variant);
         object.SetPosition(placement.p);
         object.home = placement.p;
-        object.onUpdate = [this](Actor& actor, float dt)
+        if (placement.kind == Kind::Villager)
         {
-            if (pages.empty() && !help)
+            if (placement.variant >= 16)
             {
-                UpdateObject(static_cast<TutorialActor&>(actor), dt);
+                object.profile = VillageBehavior::NewResidents()[placement.variant - 16];
             }
-        };
+            else
+            {
+                static const wchar_t* names[] = {L"장의사 마라",
+                                                 L"빵 굽는 오렌",
+                                                 L"견습 장의사",
+                                                 L"목수 브람",
+                                                 L"경비병 세라",
+                                                 L"뱃사공의 딸",
+                                                 L"어부 노엘",
+                                                 L"약초꾼 이브",
+                                                 L"대장장이 로크",
+                                                 L"양치기 미라",
+                                                 L"직조공 엘렌",
+                                                 L"행상인 토마",
+                                                 L"수습 수도사",
+                                                 L"벌목꾼 헤른",
+                                                 L"도공 아샤",
+                                                 L"순례자 벤"};
+                object.profile.name = names[placement.variant];
+                object.profile.home = placement.p;
+                object.profile.work = {placement.p.x + 1.5f, placement.p.y};
+                if (placement.variant == 4)
+                {
+                    object.profile.role = Role::Guard;
+                }
+                if (placement.variant == 1 || placement.variant == 11)
+                {
+                    object.profile.role = Role::Merchant;
+                }
+                if (placement.variant == 2 || placement.variant == 7 || placement.variant == 12)
+                {
+                    object.profile.role = Role::Healer;
+                    object.profile.traits.empathy = 85;
+                }
+                if (placement.variant == 15)
+                {
+                    object.profile.role = Role::Pilgrim;
+                }
+                object.profile.traits.courage += (placement.variant % 5) * 7 - 10;
+                object.profile.traits.curiosity += (placement.variant % 4) * 8;
+            }
+            object.brain.decision = (placement.variant % 10) * .1f;
+            object.brain.perception = (placement.variant % 5) * .05f;
+            object.brain.hunger += (placement.variant % 4) * 8;
+            object.brain.fatigue += (placement.variant % 3) * 12;
+            object.brain.food = object.profile.role == Role::Merchant ? 30 : 5;
+            residents.push_back(object.GetId());
+        }
+        if (placement.kind == Kind::Villager)
+        {
+            object.onUpdate = [this](Actor& actor, float dt)
+            {
+                if (pages.empty() && !help)
+                {
+                    UpdateObject(static_cast<TutorialActor&>(actor), dt);
+                }
+            };
+        }
         object.onDraw = [this](const Actor& actor, const SceneView& view)
         {
             DrawObject(static_cast<const TutorialActor&>(actor), view);
@@ -431,6 +878,10 @@ struct TutorialGame::Impl
     bool Blocked(Point p) const
     {
         Profiler::Count("collision.tutorial_queries");
+        if (!navigation.open.empty())
+        {
+            return !navigation.Valid(p);
+        }
         if (std::abs(p.x) > WorldGeometry::HalfWidth || std::abs(p.y) > WorldGeometry::HalfHeight ||
             Water(p))
         {
@@ -624,6 +1075,13 @@ struct TutorialGame::Impl
                        L"누군가 나를 보고 있다는 느낌만이 남는다."}});
             }
         }
+        else if (o->kind == Kind::Villager && o->variant >= 16)
+        {
+            std::wstring state = L"현재 행동: ";
+            state += VillageBehavior::Label(o->brain.action);
+            state += L" | E 대화, T 거래/치료 (별도 동의)";
+            Talk({{o->profile.name, o->profile.line, state}});
+        }
         else
         {
             static const Page lines[] = {
@@ -716,12 +1174,47 @@ struct TutorialGame::Impl
     {
         Profiler::Gauge("game.paused", help || !pages.empty() ? 1 : 0);
         time += dt;
+        navigation.budget = 3;
+        if (!help && pages.empty())
+        {
+            worldMinutes += dt * 1.2f;
+            attackCooldown = std::max(0.f, attackCooldown - dt);
+            invulnerable = std::max(0.f, invulnerable - dt);
+            if (keys[' '])
+            {
+                Attack();
+            }
+        }
+        Profiler::Gauge("village.world_minutes", worldMinutes);
+        Profiler::Gauge("village.test_refill_enabled", populationRefill ? 1 : 0);
         if (quest != Quest::Complete)
         {
             elapsed += dt;
         }
 
         scene.Update(dt);
+        int aliveBeasts = 0, fleeing = 0, surrendered = 0;
+        for (Actor::Id id : animals)
+        {
+            const auto* animal = static_cast<Animal*>(scene.Find(id));
+            if (animal && animal->hostile && animal->brain.health > 0)
+            {
+                ++aliveBeasts;
+            }
+        }
+        for (Actor::Id id : residents)
+        {
+            const auto* npc = static_cast<TutorialActor*>(scene.Find(id));
+            if (!npc)
+            {
+                continue;
+            }
+            fleeing += npc->brain.action == Action::Flee;
+            surrendered += npc->brain.surrendered;
+        }
+        Profiler::Gauge("village.hostiles_alive", aliveBeasts);
+        Profiler::Gauge("village.npcs_fleeing", fleeing);
+        Profiler::Gauge("village.npcs_surrendered", surrendered);
 
         Point desired = Iso(player.Position());
         float smoothing = 1 - std::exp(-dt * 7);
@@ -771,37 +1264,403 @@ struct TutorialGame::Impl
 
     void UpdateObject(TutorialActor& object, float dt)
     {
+        if (object.kind != Kind::Villager)
+        {
+            return;
+        }
         Profiler::Scope profile("ai.npc_update");
-        if (object.kind != Kind::Villager || object.variant < 8)
-        {
-            return;
-        }
-
+        auto& state = object.brain;
+        const auto& traits = object.profile.traits;
+        const Role role = object.profile.role;
+        state.hunger = std::min(100.f, state.hunger + dt * .075f);
+        state.thirst = std::min(100.f, state.thirst + dt * .10f);
+        state.fatigue = std::min(100.f, state.fatigue + dt * .045f);
+        state.held += dt;
+        state.cooldown = std::max(0.f, state.cooldown - dt);
+        state.serviceCooldown = std::max(0.f, state.serviceCooldown - dt);
+        state.threatMemory = std::max(0.f, state.threatMemory - dt);
+        state.memoryFear = std::max(0.f, state.memoryFear - dt);
+        state.perception -= dt;
         object.moving = false;
-        if (Distance(player.Position(), object.Position()) < 1.9f)
+        if (state.surrendered)
         {
+            state.action = Action::Surrender;
             return;
         }
 
-        const float seed = static_cast<float>(object.variant);
-        Point target = {object.home.x + std::sin(time * .18f + seed) * 1.35f,
-                        object.home.y + std::cos(time * .14f + seed) * 1.0f};
-        float length = Distance(target, object.Position());
-        if (length < .18f)
+        if (state.perception <= 0)
         {
-            return;
+            Profiler::Scope perception("ai.village_perception");
+            state.perception = .25f;
+            float nearest = 6.f;
+            Actor::Id observed = 0;
+            for (Actor::Id id : animals)
+            {
+                const auto* beast = static_cast<Animal*>(scene.Find(id));
+                if (!beast || !beast->hostile || beast->brain.health <= 0)
+                {
+                    continue;
+                }
+                float distance = Distance(object.Position(), beast->Position());
+                if (distance < nearest && navigation.Segment(object.Position(), beast->Position()))
+                {
+                    nearest = distance;
+                    observed = id;
+                }
+            }
+            if (role != Role::Bandit)
+            {
+                for (Actor::Id id : residents)
+                {
+                    const auto* other = static_cast<TutorialActor*>(scene.Find(id));
+                    if (!other || other->profile.role != Role::Bandit || other->brain.surrendered ||
+                        other->brain.action != Action::Attack)
+                    {
+                        continue;
+                    }
+                    float distance = Distance(object.Position(), other->Position());
+                    if (distance < nearest &&
+                        navigation.Segment(object.Position(), other->Position()))
+                    {
+                        nearest = distance;
+                        observed = id;
+                    }
+                }
+            }
+            if (role == Role::Bandit && Distance(player.Position(), object.Position()) < 5 &&
+                Distance(player.Position(), {0, 3}) > 12 &&
+                navigation.Segment(object.Position(), player.Position()))
+            {
+                observed = player.GetId();
+            }
+            if (observed)
+            {
+                state.threat = observed;
+                state.threatMemory = 6;
+                state.memoryFear = std::max(state.memoryFear, 35.f);
+                if (const Actor* target = scene.Find(observed))
+                {
+                    state.lastThreatPosition = target->Position();
+                }
+            }
+            if (state.threatMemory <= 0 || !scene.Find(state.threat))
+            {
+                state.threat = 0;
+                state.warned = false;
+            }
+            Profiler::Count("ai.village_perceptions");
         }
 
-        Point next = {object.Position().x + (target.x - object.Position().x) / length * dt * .75f,
-                      object.Position().y + (target.y - object.Position().y) / length * dt * .75f};
-        if (!Blocked(next))
+        state.decision -= dt;
+        if (state.decision <= 0)
         {
-            Point delta = Iso({next.x - object.Position().x, next.y - object.Position().y});
+            Profiler::Scope decision("ai.village_decision");
+            state.decision = 1.f;
+            ++state.tick;
+            const Actor* threat = scene.Find(state.threat);
+            const bool danger = threat && state.threatMemory > 0;
+            const bool closeThreat =
+                danger && Distance(object.Position(), state.lastThreatPosition) < 3;
+            const int hour = static_cast<int>(worldMinutes / 60) % 24;
+            const bool night = hour >= 21 || hour < 6;
+            // Runtime eligibility first, then bounded personality / need / memory / goal terms.
+            // Control nodes Evaluate/Observe/Remember/Decide do not compete with actions.
+            std::vector<std::pair<Action, float>> candidates;
+            auto offer = [&](Action action,
+                             bool eligible,
+                             float need,
+                             float personality,
+                             float environment,
+                             float goal,
+                             float memory)
+            {
+                if (!eligible)
+                {
+                    return;
+                }
+                unsigned seed = static_cast<unsigned>(object.variant + 1) * 2654435761u ^
+                                state.tick * 2246822519u ^
+                                static_cast<unsigned>(action) * 3266489917u;
+                float variation = static_cast<float>(seed % 7) - 3.f;
+                candidates.push_back(
+                    {action, 10.f + need + personality + environment + goal + memory + variation});
+            };
+            offer(Action::Idle, true, 0, 0, 0, 0, 0);
+            offer(Action::Work,
+                  !danger && !night && role != Role::Bandit && role != Role::Scholar &&
+                      role != Role::Pilgrim,
+                  0,
+                  traits.loyalty * .15f,
+                  0,
+                  28,
+                  0);
+            offer(Action::Investigate,
+                  !danger && !night && (role == Role::Scholar || role == Role::Pilgrim),
+                  0,
+                  traits.curiosity * .3f,
+                  0,
+                  28,
+                  0);
+            offer(Action::Wander,
+                  !danger && !night,
+                  0,
+                  traits.curiosity * .1f,
+                  0,
+                  role == Role::Bandit ? 30.f : 5.f,
+                  0);
+            offer(Action::Eat,
+                  !danger && state.food > 0 && state.hunger > 45,
+                  state.hunger,
+                  0,
+                  0,
+                  10,
+                  0);
+            offer(Action::Drink, !danger && state.thirst > 50, state.thirst, 0, 0, 10, 0);
+            offer(Action::Rest, !danger && state.fatigue > 55, state.fatigue, 0, 0, 10, 0);
+            offer(Action::Sleep, !danger && night, state.fatigue, 0, 25, 20, 0);
+            offer(Action::Help,
+                  !danger && role == Role::Healer && state.medicine > 0 && playerHealth < 80 &&
+                      Distance(player.Position(), object.Position()) < 4,
+                  0,
+                  traits.empathy * .5f,
+                  15,
+                  25,
+                  0);
+            offer(Action::Flee,
+                  danger,
+                  15,
+                  (100 - traits.courage) * .6f,
+                  closeThreat ? 35.f : 10.f,
+                  10,
+                  state.memoryFear * .3f);
+            offer(Action::Protect,
+                  danger && role == Role::Guard,
+                  0,
+                  traits.courage * .45f + traits.empathy * .1f,
+                  20,
+                  30,
+                  0);
+            offer(Action::Threaten,
+                  danger && role == Role::Bandit && state.threat == player.GetId(),
+                  0,
+                  traits.aggression * .45f,
+                  20,
+                  20,
+                  0);
+            offer(Action::Attack,
+                  danger && role == Role::Bandit && state.warned && traits.aggression >= 60 &&
+                      state.threat == player.GetId(),
+                  0,
+                  traits.aggression * .45f,
+                  25,
+                  40,
+                  0);
+            Action chosen = state.action;
+            float best = -10000, current = -10000;
+            for (const auto& candidate : candidates)
+            {
+                if (candidate.first == state.action)
+                {
+                    current = candidate.second;
+                }
+                if (candidate.second > best ||
+                    (candidate.second == best &&
+                     (candidate.first == state.action ||
+                      (chosen != state.action &&
+                       static_cast<int>(candidate.first) < static_cast<int>(chosen)))))
+                {
+                    best = candidate.second;
+                    chosen = candidate.first;
+                }
+            }
+            if (current == -10000 || (state.held >= 2 && best >= current + 12) ||
+                (closeThreat && state.action != Action::Flee && state.action != Action::Protect &&
+                 state.action != Action::Threaten && state.action != Action::Attack))
+            {
+                state.action = chosen;
+                state.held = 0;
+                state.progress = 0;
+                state.goalCell = -1;
+                state.path.clear();
+                state.waypoint = 0;
+                Profiler::Count("ai.village_action_changes");
+            }
+            Point destination = object.profile.work;
+            if (state.action == Action::Sleep || state.action == Action::Rest ||
+                state.action == Action::Eat)
+            {
+                destination = object.home;
+            }
+            if (state.action == Action::Drink)
+            {
+                destination = {6, -5};
+            }
+            if (state.action == Action::Help)
+            {
+                destination = player.Position();
+            }
+            if (state.action == Action::Wander ||
+                (state.action == Action::Work && role == Role::Guard))
+            {
+                float angle = worldMinutes * .012f + object.variant;
+                destination = {object.profile.work.x + std::cos(angle) * 2,
+                               object.profile.work.y + std::sin(angle) * 2};
+            }
+            // Edwin's schedule is explicitly clock-driven, unlike other work locations.
+            if (object.variant == 17 && state.action == Action::Work)
+            {
+                destination = hour < 9 ? Point{-3, 2} : hour < 18 ? Point{0, 1} : Point{0, 6};
+            }
+            if (state.action == Action::Flee && threat)
+            {
+                Point p = object.Position(), q = state.lastThreatPosition;
+                float length = std::max(.1f, Distance(p, q));
+                destination = {p.x + (p.x - q.x) / length * 5, p.y + (p.y - q.y) / length * 5};
+            }
+            if (state.action == Action::Protect && threat)
+            {
+                destination = state.lastThreatPosition;
+            }
+            if ((state.action == Action::Threaten || state.action == Action::Attack) && threat)
+            {
+                destination =
+                    state.action == Action::Attack ? state.lastThreatPosition : object.Position();
+            }
+            state.destination = navigation.Safe(destination);
+            Profiler::Count("ai.village_decisions");
+            switch (state.action)
+            {
+            case Action::Work:
+                Profiler::Count("ai.wbg_12_work_decisions");
+                break;
+            case Action::Investigate:
+                Profiler::Count("ai.wbg_03_investigate_decisions");
+                break;
+            case Action::Eat:
+                Profiler::Count("ai.wbg_10_eat_decisions");
+                break;
+            case Action::Drink:
+                Profiler::Count("ai.wbg_11_drink_decisions");
+                break;
+            case Action::Sleep:
+                Profiler::Count("ai.wbg_09_sleep_decisions");
+                break;
+            case Action::Rest:
+                Profiler::Count("ai.wbg_13_rest_decisions");
+                break;
+            case Action::Help:
+                Profiler::Count("ai.wbg_17_help_decisions");
+                break;
+            case Action::Flee:
+                Profiler::Count("ai.wbg_31_flee_decisions");
+                break;
+            case Action::Protect:
+                Profiler::Count("ai.wbg_33_protect_decisions");
+                break;
+            case Action::Threaten:
+                Profiler::Count("ai.wbg_23_threaten_decisions");
+                break;
+            case Action::Attack:
+                Profiler::Count("ai.wbg_28_attack_decisions");
+                break;
+            default:
+                Profiler::Count("ai.village_other_decisions");
+                break;
+            }
+        }
+
+        if (state.action == Action::Threaten && state.held > 3)
+        {
+            state.warned = true;
+        }
+
+        Point previous = object.Position();
+        // Quest giver remains reachable at the original quest marker.
+        if (object.variant != 0 &&
+            (Distance(player.Position(), previous) > 1.6f || state.action == Action::Protect ||
+             state.action == Action::Flee || state.action == Action::Threaten ||
+             state.action == Action::Attack))
+        {
+            float speed = state.action == Action::Flee      ? 2.8f
+                          : state.action == Action::Protect ? 1.8f
+                                                            : .9f;
+            MoveAgent(object, state, state.destination, speed, dt);
+        }
+        Point current = object.Position();
+        object.moving = Distance(previous, current) > .001f;
+        if (object.moving)
+        {
+            Point delta = Iso({current.x - previous.x, current.y - previous.y});
             object.direction = std::abs(delta.x) > std::abs(delta.y) ? (delta.x > 0 ? 1 : 3)
                                                                      : (delta.y > 0 ? 0 : 2);
-            object.SetPosition(next);
             object.phase += dt * 7;
-            object.moving = true;
+        }
+        bool arrived = Distance(current, state.destination) < .8f || object.variant == 0;
+        if (arrived)
+        {
+            state.progress += dt;
+            if (state.action == Action::Eat && state.progress >= 2 && state.food > 0)
+            {
+                --state.food;
+                state.hunger = std::max(0.f, state.hunger - 55);
+                state.progress = 0;
+                state.decision = 0;
+                Profiler::Count("village.food_consumed");
+            }
+            if (state.action == Action::Drink)
+            {
+                state.thirst = std::max(0.f, state.thirst - dt * 20);
+            }
+            if (state.action == Action::Rest || state.action == Action::Sleep)
+            {
+                state.fatigue =
+                    std::max(0.f, state.fatigue - dt * (state.action == Action::Sleep ? 5.f : 2.f));
+            }
+            if (state.action == Action::Work)
+            {
+                Profiler::Count("village.work_ticks");
+            }
+        }
+        if (state.action == Action::Help && state.cooldown <= 0 && state.medicine > 0 &&
+            playerHealth < 80 && Distance(current, player.Position()) < 1.8f &&
+            navigation.Segment(current, player.Position()))
+        {
+            --state.medicine;
+            playerHealth = std::min(100, playerHealth + 20);
+            state.cooldown = 5;
+            Profiler::Count("village.heals");
+        }
+        Actor* threat = scene.Find(state.threat);
+        if (state.action == Action::Protect && threat && threat != &player && state.cooldown <= 0 &&
+            Distance(current, threat->Position()) < 1.6f &&
+            navigation.Segment(current, threat->Position()))
+        {
+            auto* beast = dynamic_cast<Animal*>(threat);
+            auto* bandit = dynamic_cast<TutorialActor*>(threat);
+            if (beast)
+            {
+                DamageBeast(*beast, 18, false);
+            }
+            else if (bandit && bandit->profile.role == Role::Bandit)
+            {
+                Subdue(*bandit, 18);
+            }
+            state.cooldown = 1.2f;
+            if ((beast && beast->brain.health <= 0) || (bandit && bandit->brain.surrendered))
+            {
+                state.threat = 0;
+                state.threatMemory = 0;
+                state.decision = 0;
+            }
+            Profiler::Count("village.guard_attacks");
+        }
+        if (state.action == Action::Attack && traits.aggression >= 60 && state.cooldown <= 0 &&
+            Distance(current, player.Position()) < 1.4f &&
+            navigation.Segment(current, player.Position()))
+        {
+            DamagePlayer(7);
+            state.cooldown = 1.5f;
+            Profiler::Count("village.bandit_attacks");
         }
     }
 
@@ -881,6 +1740,15 @@ struct TutorialGame::Impl
         if (o.kind == Kind::Villager)
         {
             Person(p, o.variant, false, o.direction, o.phase, o.moving && pages.empty() && !help);
+            if (o.profile.role == Role::Bandit)
+            {
+                Rect(p.x - 16, p.y - 84, 32, 4, C(.2f, .12f, .1f));
+                Rect(p.x - 16,
+                     p.y - 84,
+                     32 * o.brain.health / 100.f,
+                     4,
+                     o.brain.surrendered ? C(.7f, .7f, .7f) : C(.8f, .25f, .2f));
+            }
         }
         else if (o.kind == Kind::Tree)
         {
@@ -992,7 +1860,7 @@ struct TutorialGame::Impl
         text.Draw(46, 76, objectives[static_cast<int>(quest)], ink);
         text.Draw(46,
                   110,
-                  L"WASD 이동   E 대화 / 조사   H 도움말   ESC 닫기 / 종료",
+                  L"WASD 이동  E 대화  SPACE 공격  T 거래/치료  H 도움말",
                   C(.56f, .66f, .64f),
                   .78f);
         Panel(995, 24, 257, 180);
@@ -1000,7 +1868,7 @@ struct TutorialGame::Impl
         auto mini = [](Point p) -> Point
         {
             Point v = Iso(p);
-            return {1125 + v.x * .043f, 125 + v.y * .043f};
+            return {1125 + v.x * .0215f, 125 + v.y * .0215f};
         };
         for (Actor::Id id : objects)
         {
@@ -1047,7 +1915,7 @@ struct TutorialGame::Impl
             }
 
             Point p = mini(animal.Position());
-            Ellipse(p.x, p.y, 1.8f, 1.8f, C(.71f, .51f, .29f));
+            Ellipse(p.x, p.y, 1.8f, 1.8f, animal.hostile ? C(.9f, .25f, .2f) : C(.71f, .51f, .29f));
         }
 
         if (quest != Quest::Complete)
@@ -1068,6 +1936,39 @@ struct TutorialGame::Impl
         Point me = mini(player.Position());
         Ellipse(me.x, me.y, 4, 4, C(.90f, .95f, .89f));
         text.Draw(1012, 171, L"금색: 목적지   흰색: 나", ink, .7f);
+        if (pages.empty() && !help)
+        {
+            const int hour = static_cast<int>(worldMinutes / 60) % 24;
+            const int minute = static_cast<int>(worldMinutes) % 60;
+            std::wstring status = L"마을 테스트 | NPC 36 | HP " + std::to_wstring(playerHealth) +
+                                  L" | 은화 " + std::to_wstring(playerCoins) + L" | 처치 " +
+                                  std::to_wstring(defeated);
+            text.Draw(35, 151, status, ink, .75f);
+            std::wstring clock =
+                L"세계 시각 " + std::to_wstring(hour) + L":" + (minute < 10 ? L"0" : L"") +
+                std::to_wstring(minute) +
+                (populationRefill ? L" | F 몹 보충 ON (테스트)" : L" | F 몹 보충 OFF");
+            text.Draw(35, 178, clock, gold, .75f);
+            // Labels are submitted by the HUD actor after postprocessing, not individual raw GL
+            // calls.
+            for (Actor::Id id : residents)
+            {
+                const auto* npc = static_cast<TutorialActor*>(scene.Find(id));
+                if (!npc || Distance(player.Position(), npc->Position()) > 7)
+                {
+                    continue;
+                }
+                Point p = Screen(npc->Position());
+                if (p.x < 80 || p.x > 1190 || p.y < 300 || p.y > 610)
+                {
+                    continue;
+                }
+                std::wstring label = npc->profile.name;
+                label += L" / ";
+                label += VillageBehavior::Label(npc->brain.action);
+                text.Draw(p.x - 48, p.y - 98, label, ink, .6f);
+            }
+        }
         if (pages.empty() && !help)
         {
             const TutorialActor* nearbyObject = Nearest();
@@ -1130,8 +2031,9 @@ struct TutorialGame::Impl
             text.Draw(270, 291, L"WASD : 화면 기준 이동 (대각선 속도 동일)", ink);
             text.Draw(270, 334, L"E : 가까운 주민 / 약초 / 제단과 상호작용", ink);
             text.Draw(270, 377, L"E 또는 SPACE : 대화 진행    1 / 2 : 호수에서 선택", ink);
-            text.Draw(270, 420, L"금색 표식 : 다음 목표    물과 건물은 통과할 수 없습니다", ink);
-            text.Draw(270, 477, L"H / ESC : 안내 닫기    완료 후 R : 처음부터", gold);
+            text.Draw(270, 420, L"SPACE 공격 | T 거래/치료 | F 테스트용 몹 보충 전환", ink);
+            text.Draw(
+                270, 477, L"H / ESC 안내 닫기 | R 초기화 | 대화/도움말 중 세계 일시정지", gold);
         }
     }
 
@@ -1226,11 +2128,17 @@ void TutorialGame::KeyDown(unsigned char key)
             return; // A consequential choice cannot be dismissed accidentally.
         }
 
-        if (key == 'e' || key == ' ')
+        if (key == 't' && !m->choice)
+        {
+            m->pages.clear();
+            m->Service();
+        }
+        else if (key == 'e' || key == ' ')
         {
             if (++m->page == m->pages.size())
             {
                 m->pages.clear();
+                ClearKeys();
             }
         }
         else if (key == 27)
@@ -1252,13 +2160,21 @@ void TutorialGame::KeyDown(unsigned char key)
     {
         m->Interact();
     }
+    if (key == 't')
+    {
+        m->Service();
+    }
+    if (key == 'f')
+    {
+        m->populationRefill = !m->populationRefill;
+    }
 
     if (key == 27)
     {
         m->quit = true;
     }
 
-    if (key == 'r' && m->quest == Quest::Complete)
+    if (key == 'r')
     {
         int width = m->windowWidth, height = m->windowHeight;
         m.reset(new Impl);

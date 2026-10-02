@@ -7,7 +7,7 @@
   PrepareHuntingMap은 최초 생성 및 N 맵 재생성 때 호출한다.
   플레이어/적 등 동적 표식만 매 프레임 갱신한다.
 - RenderQueue: Begin/Vertex/TexCoord/Color/End로 배치 데이터를 등록한다.
-  Quad/Fan/Strip은 삼각형 인덱스로, LineLoop/LineStrip은 선분으로 변환한다.
+  Quad/Fan/Strip은 삼각형 인덱스로, Lines/LineLoop/LineStrip은 폭 1 논리 픽셀의 삼각형 띠로 변환한다.
   동일 토폴로지·텍스처 상태의 연속 명령을 하나의 glDrawElements로 제출한다.
   GPU VBO/인덱스 버퍼를 사용하며 정점 색상·UV·투명도는 배치를 나누지 않는다.
 - 그림자/도형/HUD: 위 큐를 사용한다. 그림자 패스는 여러 타원을 함께 제출한다.
@@ -46,6 +46,8 @@ RenderQueue::Texture/EnableTexture/Color/TexCoord는 제출할 정점/명령의 
 3. 로그 사용 방법
 
 기본 실행: 콘솔 + JSONL 파일에 프로파일링을 출력한다.
+현재 기본 레벨: storyline1 확장 마을. --village / --tutorial도 동일하다.
+--level-one: 기존 첫 레벨 사냥터를 실행한다.
 --tutorial: 튜토리얼에 동일한 프로파일링을 적용한다.
 --no-profile: 타이머/통계 로그/GPU query를 끈다. 최적화 자체는 유지된다.
 자동 빌드나 실행은 하지 않는다.
@@ -205,3 +207,81 @@ GPU:
 - fps가 제한되어 있어도 CPU 제출 시간과 draw call이 줄었는지 별도로 비교한다.
 
 최적화 후 실제 FPS, draw call 수, 그래픽 동일성은 빌드/실행 전에는 확정할 수 없다.
+
+8. storyline1 마을 테스트 계측 (--village / --tutorial)
+
+CPU scope (ms, 자식 비용 포함):
+  world.village_prepare: 확장 마을 보행 데이터 준비와 적대 야수 생성
+  navigation.village_build: 장애물 래스터화 및 시작점 연결 영역 탐색
+  navigation.village_pathfind: 제한된 BFS 경로 탐색
+  navigation.village_safe_point: 막힌 목적지의 가장 가까운 보행 위치 탐색
+  ai.village_perception: 주민의 거리/정적 장애물 기준 직접 관찰
+  ai.village_decision: 실행 조건 필터 및 성격/욕구 기반 효용 선택
+  ai.village_movement: 선분 검사, 경로 요청 및 이동 (pathfind와 중첩)
+  ai.village_beast_update: 전투 테스트 야수 AI/재생성
+  game.village_combat: 플레이어 근접 공격 및 피격 대상 검사
+  기존 ai.npc_update: 이제 비주민 장식물은 제외하고 주민 업데이트만 계측
+
+counters_window (횟수):
+  navigation.village_path_requests / path_failures / budget_deferred / snap_requests
+  navigation.village_visited_cells: BFS에서 발견한 셀 수, build의 flood fill도 포함
+  ai.village_perceptions / beast_perceptions / decisions / action_changes / other_decisions
+  ai.wbg_03_investigate_decisions, 09_sleep, 10_eat, 11_drink, 12_work, 13_rest,
+     17_help, 23_threaten, 28_attack, 31_flee, 33_protect (각 키는 ai.wbg_XX_NAME_decisions)
+    선택된 행동별 평가 횟수이며 실제 성공한 행동 횟수/시간이 아니다.
+  village.player_attacks / player_hits / player_test_recoveries
+  village.beast_defeats / test_beast_respawns / guard_attacks / bandit_attacks / surrenders
+  village.trades / heals / food_consumed: 실제 완료한 자원 소비/효과
+  village.work_ticks: 작업장에 머무는 Work 업데이트 횟수; 생산 수량이 아니다.
+
+gauges_last:
+  village.npc_count / hostile_capacity / hostiles_alive / npcs_fleeing / npcs_surrendered: 개체 수
+  village.world_minutes: 00:00 기준 게임 분, 시작 360, 일시정지 중 고정
+  village.test_refill_enabled: 테스트 몹 보충 0/1
+  navigation.village_reachable_cells: 시작점에서 연결된 0.5 단위 보행 셀 수
+
+ai.village_decision과 pathfind는 호출당 평균뿐 아니라 창 합계/프레임으로 비교한다.
+budget_deferred 증가만으로 실패를 단정하지 않는다. 요청이 다음 업데이트로 이월된 횟수다.
+snap_requests와 safe_point 비용이 크면 목적지/장애물 배치와 근접 탐색 캐시를 우선 검토한다.
+몹 보충 설정, 세계 시각, 주민/야수 수, Debug/Release를 맞춘 로그끼리 비교한다.
+세부 기능 범위와 수동 검증은 docs/VILLAGE_TEST.md를 따른다.
+
+9. 마을 CPU 렌더링 최적화
+
+- 나무 3종/건물 9종의 정적 외형을 1024x768 RGBA 아틀라스로 한 번 굽는다.
+  AssetCache의 village_scenery_v1에 저장하며 다음 실행은 로드한다.
+  버전을 바꿔야 외형/머터리얼 변경이 캐시에 반영된다. 첫 생성의 GPU readback은 시작 시에만 발생한다.
+  FBO가 지원되지 않거나 완성되지 않으면 기존 도형 렌더 경로를 유지한다.
+  나무 흔들림은 사각형 변형, 건물 연기는 동적 도형으로 남긴다. 외형/투명도는 사용자 확인 필요.
+- 타원의 단위원을 재사용하며, 선분도 삼각형 배치에 들어간다. 원래의 native GL_LINES와
+  가장자리 픽셀/연결부/화면 확대 시 두께는 약간 다를 수 있다. glLineWidth/stipple은 지원하지 않는다.
+- 도형·배치 카운터는 로컬 누적 후 패스/Flush 경계에서 Profiler에 전달한다.
+  API draw call 집계 의미는 유지되며 std::map 문자열 조회를 도형마다 반복하지 않는다.
+- SceneGraph는 표시/화면 범위 검사 후 정렬한다. 깊이는 후보별 한 번만 계산한다.
+  정렬 기준은 layer→depth→Actor ID로 동일하다. 재사용 버퍼는 SceneGraph 내부에만 존재한다.
+  렌더 콜백 중 위치·표시 변경은 다음 프레임의 후보 선정에 반영한다.
+  scene.sort는 현재 후보 필터링/깊이 계산도 포함한다. scene.sort_candidates는 마지막 후보 수다.
+- 삭제 요청이 없으면 CollectDestroyed는 전체 순회를 하지 않는다.
+  따라서 scene.collect_destroyed 항목이 없는 창은 계측 누락이 아니라 정리가 불필요했던 구간이다.
+- 안전 목적지는 맵 생성 시 다중 시작점 BFS로 표를 만든 뒤 O(1) 조회한다.
+  기존 연속 좌표의 정확한 유클리드 최근접과 달리 격자 Manhattan 거리 기준이며,
+  반환 위치는 항상 플레이어 시작점과 연결된 보행 영역이다.
+- Tick은 1/60초 고정 업데이트를 최대 8회 수행하고 나머지 시간은 다음 Tick으로 보존한다.
+  보통 저프레임에서는 50ms 단위 잘림으로 게임 시간이 느려지지 않는다.
+  처리 용량을 넘는 지속 부하는 debt로 관측된다. 디버거 정지 등 2초 초과 누적은 명시적으로 제한한다.
+
+추가 로그:
+  cache.village_atlas_prepare: 시작 시 생성/로드 CPU ms
+  cache.village_atlas_builds / hits / unavailable: 생성/재사용/폴백 횟수
+  cache.village_atlas_bytes: 아틀라스 RGBA 바이트 수 (3 MiB)
+  scene.sort_candidates: 정렬하는 가시 Actor 수
+  navigation.village_safe_cache_hits: 막힌 목적지 보정 표 조회 횟수
+  loop.simulation_substeps: 완료한 고정 업데이트 횟수
+  loop.simulation_debt_ms: 미처리 누적 시간 ms (정상 잔여는 약 0~16.67ms)
+  loop.long_gap_clamps: 2초 초과 누적 제한 발생 횟수
+  loop.last_discarded_gap_ms: 마지막 긴 정지에서 제외한 시간 ms
+
+비교 시 startup과 runtime을 분리한다. game.update/scene.update의 호출 수는 이제 렌더 프레임과
+일치하지 않을 수 있다. 프레임당 CPU는 sum/frames, 시뮬레이션 한 단계 비용은 avg로 본다.
+render.world, draw_calls_per_frame, batch.split_topology, upload.dynamic_buffer_bytes를 우선 비교한다.
+실제 FPS 개선율과 시각 결과는 아직 빌드/실행으로 검증하지 않았다.

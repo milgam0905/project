@@ -23,13 +23,15 @@ but WITHOUT ANY WARRANTY.
 #include <cstring>
 #include <iostream>
 #include <memory>
+#include <algorithm>
 
 namespace
 {
     std::unique_ptr<GameMode> game;
-    bool tutorialMode = false;
+    bool tutorialMode = true;
     bool profiling = true;
     int previousTick = 0;
+    double simulationDebt = 0;
     HWND gameWindow = nullptr;
 
     void RenderScene()
@@ -73,7 +75,24 @@ namespace
         {
             Profiler::Scope profile("game.update");
             Profiler::Count("game.update_calls");
-            game->Update(dt);
+            // Preserve normal slow-frame time; bounded fixed steps avoid collision tunnelling.
+            simulationDebt += std::max(0.0, static_cast<double>(dt));
+            if (simulationDebt > 2.0)
+            {
+                Profiler::Count("loop.long_gap_clamps");
+                Profiler::Gauge("loop.last_discarded_gap_ms", (simulationDebt - 2.0) * 1000);
+                simulationDebt = 2.0;
+            }
+            constexpr double step = 1.0 / 60.0;
+            int steps = 0;
+            while (simulationDebt >= step && steps < 8)
+            {
+                game->Update(static_cast<float>(step));
+                simulationDebt -= step;
+                ++steps;
+            }
+            Profiler::Count("loop.simulation_substeps", steps);
+            Profiler::Gauge("loop.simulation_debt_ms", simulationDebt * 1000);
         }
         if (game->WantsQuit())
         {
@@ -147,11 +166,16 @@ int main(int argc, char** argv)
     // Strip the game-specific option before passing arguments to FreeGLUT.
     for (int i = 1; i < argc;)
     {
-        if (std::strcmp(argv[i], "--tutorial") == 0 || std::strcmp(argv[i], "--no-profile") == 0)
+        if (std::strcmp(argv[i], "--tutorial") == 0 || std::strcmp(argv[i], "--village") == 0 ||
+            std::strcmp(argv[i], "--level-one") == 0 || std::strcmp(argv[i], "--no-profile") == 0)
         {
-            if (std::strcmp(argv[i], "--tutorial") == 0)
+            if (std::strcmp(argv[i], "--tutorial") == 0 || std::strcmp(argv[i], "--village") == 0)
             {
                 tutorialMode = true;
+            }
+            else if (std::strcmp(argv[i], "--level-one") == 0)
+            {
+                tutorialMode = false;
             }
             else
             {
@@ -174,7 +198,7 @@ int main(int argc, char** argv)
     // Renderer uses compatibility drawing plus optional framebuffer post-processing.
     glutInitContextVersion(2, 1);
     glutInitWindowSize(1280, 800);
-    glutCreateWindow(tutorialMode ? "SimpleGame - Village of Echoes / Tutorial"
+    glutCreateWindow(tutorialMode ? "SimpleGame - Storyline1 / Expanded Village Test"
                                   : "SimpleGame - Level 1 / Ashen Hunting Grounds");
     glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
     if (glewInit() != GLEW_OK || !GLEW_VERSION_2_1)

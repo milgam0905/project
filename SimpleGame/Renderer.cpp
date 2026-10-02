@@ -7,6 +7,7 @@
 #include "RenderQueue.h"
 #include "Profiler.h"
 #include "RenderAssets.h"
+#include "AssetCache.h"
 #include "WorldGeometry.h"
 #include "LevelOneMap.h"
 #include "EffectShaders.h"
@@ -77,10 +78,19 @@ namespace
             Color(C(color.r, color.g, color.b, 0));
         }
 
-        for (int i = 0; i <= 48; ++i)
+        static const std::vector<P> circle = []
         {
-            float a = i * Pi / 24.f;
-            RenderQueue::Vertex(p.x + std::cos(a) * rx, p.y + std::sin(a) * ry);
+            std::vector<P> points;
+            for (int i = 0; i <= 48; ++i)
+            {
+                float angle = i * Pi / 24.f;
+                points.push_back({std::cos(angle), std::sin(angle)});
+            }
+            return points;
+        }();
+        for (const P& unit : circle)
+        {
+            RenderQueue::Vertex(p.x + unit.x * rx, p.y + unit.y * ry);
         }
 
         RenderQueue::End();
@@ -277,6 +287,8 @@ struct Renderer::Impl
     RenderQueue::StaticMesh lakeMesh, huntingWater;
     std::vector<P> lakeBoundary, cachedBoundary;
     GLuint minimap = 0;
+    GLuint villageAtlas = 0;
+    bool bakingVillage = false;
     bool huntingPrepared = false;
     GLint waterTime = -1, fireTime = -1, fireMystical = -1;
     GLint blurSource = -1, blurStep = -1, blurExtract = -1;
@@ -334,6 +346,7 @@ struct Renderer::Impl
     {
         RenderQueue::Flush();
         glDeleteTextures(1, &minimap);
+        glDeleteTextures(1, &villageAtlas);
         glDeleteTextures(RenderAssets::MaterialCount, materials);
         glDeleteTextures(1, &atlas);
         glDeleteTextures(1, &modelAtlas);
@@ -528,23 +541,178 @@ void Renderer::BeginScene(P camera, float time)
     Canvas();
 }
 
+void Renderer::PrepareVillageAtlas()
+{
+    if (m->villageAtlas)
+    {
+        return;
+    }
+    Profiler::Scope profile("cache.village_atlas_prepare");
+    const int width = 1024, height = 768;
+    std::vector<unsigned char> pixels;
+    RenderQueue::ResetState();
+    if (!AssetCache::Load(L"village_scenery_v1", width, height, pixels))
+    {
+        if (!(GLEW_VERSION_3_0 || GLEW_ARB_framebuffer_object))
+        {
+            Profiler::Count("cache.village_atlas_unavailable");
+            return;
+        }
+        GLint framebuffer = 0, program = 0, matrixMode = 0;
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &framebuffer);
+        glGetIntegerv(GL_CURRENT_PROGRAM, &program);
+        glGetIntegerv(GL_MATRIX_MODE, &matrixMode);
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glActiveTexture(GL_TEXTURE0);
+        GLuint target = 0, texture = 0;
+        bool ready = m->Target(target, texture, width, height);
+        if (ready)
+        {
+            glViewport(0, 0, width, height);
+            glUseProgram(0);
+            glDisable(GL_DEPTH_TEST);
+            glDisable(GL_CULL_FACE);
+            glDisable(GL_SCISSOR_TEST);
+            glEnable(GL_BLEND);
+            // Correct coverage alpha; unpremultiply the baked RGB before normal sprite blending.
+            glBlendFuncSeparate(
+                GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+            glClearColor(0, 0, 0, 0);
+            glClear(GL_COLOR_BUFFER_BIT);
+            glMatrixMode(GL_PROJECTION);
+            glPushMatrix();
+            glLoadIdentity();
+            glOrtho(0, width, height, 0, -1, 1);
+            glMatrixMode(GL_MODELVIEW);
+            glPushMatrix();
+            glLoadIdentity();
+            m->bakingVillage = true;
+            for (int slot = 0; slot < 12; ++slot)
+            {
+                P foot = {static_cast<float>((slot % 4) * 256 + 128),
+                          static_cast<float>((slot / 4) * 256 + 224)};
+                if (slot < 3)
+                {
+                    DrawTree(foot, slot, 1);
+                }
+                else
+                {
+                    DrawHouse(foot, slot - 3, 1);
+                }
+            }
+            RenderQueue::Flush();
+            m->bakingVillage = false;
+            std::vector<unsigned char> bottomUp(width * height * 4);
+            GLint packAlignment = 4;
+            glGetIntegerv(GL_PACK_ALIGNMENT, &packAlignment);
+            glPixelStorei(GL_PACK_ALIGNMENT, 1);
+            glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, bottomUp.data());
+            glPixelStorei(GL_PACK_ALIGNMENT, packAlignment);
+            pixels.resize(bottomUp.size());
+            for (int y = 0; y < height; ++y)
+            {
+                for (int x = 0; x < width; ++x)
+                {
+                    size_t source = (static_cast<size_t>(height - 1 - y) * width + x) * 4;
+                    size_t destination = (static_cast<size_t>(y) * width + x) * 4;
+                    unsigned alpha = bottomUp[source + 3];
+                    for (int channel = 0; channel < 3; ++channel)
+                    {
+                        pixels[destination + channel] =
+                            alpha ? static_cast<unsigned char>(std::min(
+                                        255u,
+                                        (bottomUp[source + channel] * 255u + alpha / 2) / alpha))
+                                  : 0;
+                    }
+                    pixels[destination + 3] = static_cast<unsigned char>(alpha);
+                }
+            }
+            glPopMatrix();
+            glMatrixMode(GL_PROJECTION);
+            glPopMatrix();
+            glMatrixMode(matrixMode);
+            AssetCache::Save(L"village_scenery_v1", width, height, pixels.data());
+            Profiler::Count("cache.village_atlas_builds");
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        glDeleteFramebuffers(1, &target);
+        glDeleteTextures(1, &texture);
+        glUseProgram(program);
+        glPopAttrib();
+        RenderQueue::ResetState();
+        if (!ready)
+        {
+            Profiler::Count("cache.village_atlas_unavailable");
+            return;
+        }
+    }
+    else
+    {
+        Profiler::Count("cache.village_atlas_hits");
+    }
+    glGenTextures(1, &m->villageAtlas);
+    glBindTexture(GL_TEXTURE_2D, m->villageAtlas);
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    Profiler::Count("upload.texture_bytes", pixels.size());
+    Profiler::Gauge("cache.village_atlas_bytes", static_cast<double>(pixels.size()));
+    RenderQueue::ResetState();
+}
+
+void Renderer::DrawVillageSprite(P foot, int slot, float opacity, float sway)
+{
+    RenderQueue::EnableTexture(true);
+    RenderQueue::Texture(m->villageAtlas);
+    RenderQueue::Color(1, 1, 1, opacity);
+    float left = static_cast<float>((slot % 4) * 256) / 1024;
+    float top = static_cast<float>((slot / 4) * 256) / 768;
+    RenderQueue::Begin(GL_QUADS);
+    RenderQueue::TexCoord(left, top);
+    RenderQueue::Vertex(foot.x - 128 + sway, foot.y - 224);
+    RenderQueue::TexCoord(left + .25f, top);
+    RenderQueue::Vertex(foot.x + 128 + sway, foot.y - 224);
+    RenderQueue::TexCoord(left + .25f, top + 256.f / 768);
+    RenderQueue::Vertex(foot.x + 128, foot.y + 32);
+    RenderQueue::TexCoord(left, top + 256.f / 768);
+    RenderQueue::Vertex(foot.x - 128, foot.y + 32);
+    RenderQueue::End();
+    RenderQueue::EnableTexture(false);
+}
+
+void Renderer::DrawHouseSmoke(P p, float a)
+{
+    for (int i = 0; i < 9; ++i)
+    {
+        float life = std::fmod(m->time * .24f + i / 9.f, 1.f);
+        Ellipse({p.x + 33 + life * 28 + std::sin(life * 9) * 8, p.y - 181 - life * 70},
+                7 + life * 17,
+                5 + life * 12,
+                C(.58f, .61f, .55f, (1 - life) * .10f * a),
+                true);
+    }
+}
+
 void Renderer::DrawTerrain(P origin, float elevation)
 {
     TerrainProjection projection(m->camera, origin, elevation);
 
     TexturedQuad(m->materials[RenderAssets::Grass],
-                 m->Screen({-28, -26}),
-                 m->Screen({28, -26}),
-                 m->Screen({28, 26}),
-                 m->Screen({-28, 26}),
-                 28,
-                 26,
+                 m->Screen({-WorldGeometry::HalfWidth, -WorldGeometry::HalfHeight}),
+                 m->Screen({WorldGeometry::HalfWidth, -WorldGeometry::HalfHeight}),
+                 m->Screen({WorldGeometry::HalfWidth, WorldGeometry::HalfHeight}),
+                 m->Screen({-WorldGeometry::HalfWidth, WorldGeometry::HalfHeight}),
+                 WorldGeometry::HalfWidth,
+                 WorldGeometry::HalfHeight,
                  C(.68f, .78f, .72f));
     // Broad soft patches hide repetition without visible square/diamond terrain cells.
-    for (int i = 0; i < 120; ++i)
+    for (int i = 0; i < 480; ++i)
     {
-        float x = -27.f + static_cast<float>((i * 131) % 540) / 10.f;
-        float y = -25.f + static_cast<float>((i * 83) % 500) / 10.f;
+        float x = -55.f + static_cast<float>((i * 131) % 1100) / 10.f;
+        float y = -51.f + static_cast<float>((i * 83) % 1020) / 10.f;
         P p = m->Screen({x, y});
         if (p.x < -200 || p.x > 1480 || p.y < -100 || p.y > 900)
         {
@@ -809,6 +977,12 @@ void Renderer::DrawCachedModel(P p, int model, int frame, float facing, float op
 
 void Renderer::DrawHouse(P p, int variant, float a)
 {
+    if (m->villageAtlas && !m->bakingVillage)
+    {
+        DrawVillageSprite(p, 3 + variant % 9, a);
+        DrawHouseSmoke(p, a);
+        return;
+    }
     using namespace RenderAssets;
     auto material = [&](Material id, P x, P y, P z, P w, float u, float v, Col tint)
     {
@@ -907,14 +1081,9 @@ void Renderer::DrawHouse(P p, int variant, float a)
              .6f,
              C(.60f, .60f, .52f, a));
     Rect(p.x + 22, p.y - 174, 23, 6, C(.24f, .26f, .24f, a));
-    for (int i = 0; i < 9; ++i)
+    if (!m->bakingVillage)
     {
-        float life = std::fmod(m->time * .24f + i / 9.f, 1.f);
-        Ellipse({p.x + 33 + life * 28 + std::sin(life * 9) * 8, p.y - 181 - life * 70},
-                7 + life * 17,
-                5 + life * 12,
-                C(.58f, .61f, .55f, (1 - life) * .10f * a),
-                true);
+        DrawHouseSmoke(p, a);
     }
     // Wooden sill and a leaning barrel ground the building in its period.
     TexturedQuad(m->materials[Timber],
@@ -931,6 +1100,11 @@ void Renderer::DrawHouse(P p, int variant, float a)
 
 void Renderer::DrawTree(P p, int variant, float a)
 {
+    if (m->villageAtlas && !m->bakingVillage)
+    {
+        DrawVillageSprite(p, variant % 3, a, std::sin(m->time * .8f + variant) * 2);
+        return;
+    }
     TexturedQuad(m->materials[RenderAssets::Timber],
                  {p.x - 7, p.y - 70},
                  {p.x + 7, p.y - 70},

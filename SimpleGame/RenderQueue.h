@@ -20,6 +20,7 @@ namespace RenderQueue
     void Flush();
     void ResetState();
     void Shutdown();
+    // Lines are one-logical-pixel triangle ribbons; stipple/native line width are unsupported.
     // These are ordering barriers: pending geometry must use the old GL state.
     void Program(GLuint program);
     void Blend(GLenum source, GLenum destination);

@@ -6,8 +6,8 @@
 // Shared continuous shoreline for rendering, tree placement, animal AI and collision.
 namespace WorldGeometry
 {
-    constexpr float HalfWidth = 28.f;
-    constexpr float HalfHeight = 26.f; // 56 x 52 world units: exactly four times old area.
+    constexpr float HalfWidth = 56.f;
+    constexpr float HalfHeight = 52.f; // 112 x 104: four times the previous village area.
     constexpr float Pi = 3.14159265f;
 
     inline RenderPoint Project(RenderPoint p)
@@ -45,15 +45,19 @@ namespace WorldGeometry
         float width;
     };
 
-    inline const std::array<Trail, 6>& Trails()
+    inline const std::array<Trail, 10>& Trails()
     {
-        static const std::array<Trail, 6> trails = {
+        static const std::array<Trail, 10> trails = {
             {{{0, 9}, {2, 4}, {-1, 1}, {0, -2}, .95f},
              {{0, 1}, {-4, -.4f}, {-4, -6.5f}, {-8, -5}, .65f},
              {{0, 1}, {5, 1}, {1, -7.8f}, {6, -7}, .70f},
              {{-8, -5}, {-14, -4}, {-11, -17}, {-20, -20}, .55f},
              {{0, 8}, {7, 14}, {14, 7}, {23, 18}, .8f},
-             {{0, 1}, {6, 4}, {10, 3}, {12, 9}, .7f}}};
+             {{0, 1}, {6, 4}, {10, 3}, {12, 9}, .7f},
+             {{-20, -20}, {-28, -22}, {-35, -35}, {-48, -42}, .8f},
+             {{23, 18}, {30, 22}, {36, 30}, {48, 40}, 1.f},
+             {{0, 8}, {-12, 14}, {-28, 12}, {-46, 35}, 1.f},
+             {{12, 9}, {22, 5}, {32, -20}, {47, -38}, 1.f}}};
         return trails;
     }
 

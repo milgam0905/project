@@ -47,6 +47,18 @@ class SceneGraph
     std::unordered_map<Actor::Id, Actor*> index;
     Actor::Id nextId = 1;
     bool traversing = false;
+    bool destructionPending = false;
+
+    struct RenderEntry
+    {
+        Actor* actor;
+        ActorLayer layer;
+        float depth;
+        Actor::Id id;
+    };
+
+    std::vector<Actor*> updateSnapshot, renderSnapshot;
+    std::vector<RenderEntry> visibleEntries;
 
     void Add(std::unique_ptr<Actor> actor, Actor& parent);
     void CollectDestroyed();
