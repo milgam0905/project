@@ -1,0 +1,23 @@
+{
+  "schema": "world-monitor.v1",
+  "type": "snapshot",
+  "game_id": "demo",
+  "world_id": "forest-example",
+  "instance_id": "example-session-2",
+  "sequence": 1,
+  "epoch": 1,
+  "paused": false,
+  "world_time_minutes": null,
+  "bounds": { "min_x": 0, "min_y": 0, "max_x": 40, "max_y": 36 },
+  "metrics": {},
+  "settlements": [ { "id": "camp", "name": "예제 숲 야영지 (가상 데이터)", "metrics": {} } ],
+  "entities": [
+    {
+      "id": "wolf-1", "name": "예제 늑대", "kind": "monster", "settlement_id": "camp",
+      "role": "beast", "action": "attack_windup", "action_label": "공격 준비", "target_id": null,
+      "position": { "x": 18, "y": 12 }, "health": 32, "max_health": 32,
+      "alive": true, "active": true, "visible": true, "hostile": true,
+      "metrics": { "attack_windup_seconds": 0.3 }, "personality": {}
+    }
+  ]
+}

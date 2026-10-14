@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>World Watch · 로컬 월드 모니터</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/app.js" defer></script>
+</head>
+<body>
+    <aside>
+        <div class="brand">◈ <span>WORLD WATCH</span></div>
+        <p class="muted">LOCAL OBSERVATORY / 01</p>
+        <h2>연결된 월드</h2>
+        <nav id="worlds" aria-label="월드 선택"></nav>
+        <div class="aside-note">읽기 전용 모니터<br>JSON 스냅샷 · 1초 간격<br>게임 간 이동 기능과 독립</div>
+    </aside>
+    <main>
+        <header><div><p class="eyebrow">LIVE TELEMETRY</p><h1>월드 모니터</h1></div><span id="connection" class="badge" role="status">수신기 연결 중</span></header>
+        <section id="empty" class="panel empty">
+            <h2>첫 번째 월드를 기다리고 있습니다.</h2>
+            <p>게임을 실행하면 NPC와 마을의 상태가 여기에 표시됩니다.</p>
+            <code>POST http://127.0.0.1:8765/api/snapshots</code>
+            <p class="muted">수신기가 실행되어 있어도 게임의 전송 기능이 꺼져 있으면 데이터가 없습니다.<br>설정과 메시지 규격은 monitor/README.md를 확인하세요.</p>
+        </section>
+        <div id="content" hidden>
+            <section class="world-heading"><div><h2 id="world-title"></h2><p id="world-meta" class="muted"></p></div><span id="freshness" class="badge"></span></section>
+            <div id="cards" class="cards"></div>
+            <section class="section-heading"><h2>마을 현황</h2><span class="muted">해당 월드의 관리 소속 기준 · 생존 / 전체</span></section>
+            <div id="settlements" class="towns"></div>
+            <section class="panel entity-panel">
+                <div class="section-heading"><h2>개체 관측</h2><span id="count" class="muted"></span></div>
+                <div class="filters">
+                    <label>검색<input id="search" type="search" placeholder="이름, ID, 역할, 행동" maxlength="256"></label>
+                    <label>종류<select id="kind"><option value="npc">NPC</option><option value="">전체 개체</option><option value="monster">몹</option><option value="wildlife">야생동물</option><option value="player">플레이어</option></select></label>
+                    <label>마을<select id="town"><option value="">전체 마을</option></select></label>
+                    <label>상태<select id="life"><option value="">전체 상태</option><option value="alive">생존</option><option value="dead">사망</option><option value="hostile">적대적</option></select></label>
+                </div>
+                <div class="table-wrap"><table><thead><tr><th>이름 / ID</th><th>종류 · 역할</th><th>행동</th><th>체력</th><th>상태</th><th>위치 (X, Y)</th></tr></thead><tbody id="entities"></tbody></table></div>
+                <div class="pager"><button id="prev">이전</button><span id="page"></span><button id="next">다음</button></div>
+            </section>
+            <section class="panel inspector"><div class="section-heading"><h2>개체 상세</h2><span class="muted">목록에서 이름을 선택하세요</span></div><div id="detail">선택된 개체가 없습니다.</div></section>
+        </div>
+        <footer>LOOPBACK ONLY · 원본 상태 관측 / 상태 제어 없음 · 5초 이상 미수신 시 오래된 정보 · null = 미수집</footer>
+    </main>
+</body>
+</html>

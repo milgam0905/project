@@ -1,4 +1,5 @@
 #pragma once
+#include "WorldMonitor.h"
 
 class GameMode
 {
@@ -11,4 +12,5 @@ class GameMode
     virtual void KeyUp(unsigned char key) = 0;
     virtual void ClearKeys() = 0;
     virtual bool WantsQuit() const = 0;
+    virtual WorldMonitor::Snapshot CaptureMonitor() const = 0;
 };

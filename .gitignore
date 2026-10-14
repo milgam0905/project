@@ -12,3 +12,4 @@
 *.tlog
 *.log
 *.lastbuildstate
+**/__pycache__/

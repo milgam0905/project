@@ -285,3 +285,22 @@ snap_requests와 safe_point 비용이 크면 목적지/장애물 배치와 근�
 일치하지 않을 수 있다. 프레임당 CPU는 sum/frames, 시뮬레이션 한 단계 비용은 avg로 본다.
 render.world, draw_calls_per_frame, batch.split_topology, upload.dynamic_buffer_bytes를 우선 비교한다.
 실제 FPS 개선율과 시각 결과는 아직 빌드/실행으로 검증하지 않았다.
+
+10. 로컬 월드 모니터링
+
+- monitor.capture: 약 1초마다 Actor 상태를 데이터로 복사하는 메인 스레드 CPU ms.
+- monitor.serialize: JSON 직렬화와 최신 전송 슬롯 등록 CPU ms. capture와 별도 구간.
+- monitor.snapshot_bytes: 관측 창에 생성한 JSON 바이트 합계 (실제 전송량과 다름).
+- monitor.entity_count: 마지막 스냅샷의 관측 개체 수.
+- monitor.sent / monitor.send_failures: HTTP 202 성공 / 실패 완료 건수. 메인 스레드에서 지연 수집.
+- monitor.coalesced_snapshots: 아직 전송하지 않은 이전 스냅샷을 최신으로 대체한 횟수.
+- monitor.oversize_snapshots: 1 MiB를 넘어 전송하지 않은 횟수.
+- monitor.last_send_status: 마지막 완료 상태. 0=아직 없음, 1=202 성공, -1=실패.
+- monitor.last_send_wall_ms: 워커 스레드에서 측정한 마지막 HTTP 요청 경과 시간 ms.
+  CPU 시간이 아니며 네트워크 대기를 포함한다. game.update/렌더 CPU 합계에 더하지 않는다.
+
+워커에서는 Profiler를 호출하지 않고 atomic 값만 기록한다. 메인 스레드가 다음 Publish 때 수집한다.
+전송기는 기본 활성화이며 --no-monitor로 캡처/전송 모두 비활성화할 수 있다.
+수신기 꺼짐은 정상적으로 발생 가능한 개발 환경 상태다. 실패 건수만으로 게임 병목을 단정하지 않는다.
+모니터 서버/브라우저 CPU 비용은 이 게임 프로파일러의 측정 범위 밖이다.
+수신기와 JSON 규격, 사용법은 monitor/README.md를 참고한다.

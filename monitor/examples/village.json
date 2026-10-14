@@ -1,0 +1,26 @@
+{
+  "schema": "world-monitor.v1",
+  "type": "snapshot",
+  "game_id": "demo",
+  "world_id": "village-example",
+  "instance_id": "example-session-1",
+  "sequence": 1,
+  "epoch": 1,
+  "paused": false,
+  "world_time_minutes": 480,
+  "bounds": { "min_x": -56, "min_y": -52, "max_x": 56, "max_y": 52 },
+  "metrics": {},
+  "settlements": [
+    { "id": "town", "name": "예제 마을 (가상 데이터)", "metrics": { "resident_food_total": 2, "resident_medicine_total": 1, "resident_coins_total": 20 } }
+  ],
+  "entities": [
+    {
+      "id": "npc-1", "name": "예제 상인", "kind": "npc", "settlement_id": "town",
+      "role": "merchant", "action": "WBG_16", "action_label": "거래", "target_id": null,
+      "position": { "x": 2, "y": 6 }, "health": 80, "max_health": 100,
+      "alive": true, "active": true, "visible": true, "hostile": false,
+      "metrics": { "hunger": 23, "thirst": 14, "fatigue": 40, "food": 2, "medicine": 1, "coins": 20 },
+      "personality": { "courage": 48, "empathy": 45, "aggression": 18, "lawfulness": 60, "greed": 78, "curiosity": 50, "loyalty": 55 }
+    }
+  ]
+}

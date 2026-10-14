@@ -182,6 +182,7 @@ namespace
 
 struct TutorialGame::Impl
 {
+    const std::uint64_t monitorEpoch = WorldMonitor::NextEpoch();
     Renderer renderer{1280, 800};
     TextPainter text;
     int windowWidth = 1280, windowHeight = 800, playerDirection = 0;
@@ -2048,6 +2049,145 @@ TutorialGame::TutorialGame() : m(new Impl)
 }
 
 TutorialGame::~TutorialGame() = default;
+
+WorldMonitor::Snapshot TutorialGame::CaptureMonitor() const
+{
+    Profiler::Scope profile("monitor.capture");
+    WorldMonitor::Snapshot snapshot;
+    snapshot.epoch = m->monitorEpoch;
+    snapshot.paused = m->help || !m->pages.empty();
+    snapshot.worldMinutes = m->worldMinutes;
+    snapshot.minX = -WorldGeometry::HalfWidth;
+    snapshot.maxX = WorldGeometry::HalfWidth;
+    snapshot.minY = -WorldGeometry::HalfHeight;
+    snapshot.maxY = WorldGeometry::HalfHeight;
+
+    WorldMonitor::Settlement town;
+    town.id = "echo_village";
+    town.name = L"잔향의 마을";
+    town.metrics = {{"quest_stage", static_cast<int>(m->quest)},
+                    {"test_refill_enabled", m->populationRefill ? 1 : 0},
+                    {"resident_food_total", 0},
+                    {"resident_medicine_total", 0},
+                    {"resident_coins_total", 0}};
+    const char* roles[] = {
+        "resident", "merchant", "guard", "healer", "scholar", "bandit", "pilgrim"};
+    const auto actionCode = [](VillageBehavior::Action action)
+    {
+        const int value = static_cast<int>(action);
+        return std::string(value < 10 ? "WBG_0" : "WBG_") + std::to_string(value);
+    };
+
+    for (Actor::Id id : m->residents)
+    {
+        const auto* npc = static_cast<const TutorialActor*>(m->scene.Find(id));
+        if (!npc)
+        {
+            continue;
+        }
+
+        WorldMonitor::Entity entity;
+        const auto& brain = npc->brain;
+        const auto& traits = npc->profile.traits;
+        entity.id = std::to_string(id);
+        entity.name = npc->profile.name;
+        entity.kind = "npc";
+        entity.settlementId = town.id;
+        entity.role = roles[static_cast<int>(npc->profile.role)];
+        entity.action = actionCode(brain.action);
+        entity.actionLabel = VillageBehavior::Label(brain.action);
+        entity.health = brain.health;
+        entity.maxHealth = 100;
+        entity.alive = brain.health > 0;
+        entity.active = npc->IsActive();
+        entity.visible = npc->IsVisible();
+        entity.hostile = npc->profile.role == Role::Bandit && !brain.surrendered;
+        entity.x = npc->Position().x;
+        entity.y = npc->Position().y;
+        if (m->scene.Find(brain.threat))
+        {
+            entity.targetId = std::to_string(brain.threat);
+        }
+        entity.metrics = {{"hunger", brain.hunger},
+                          {"thirst", brain.thirst},
+                          {"fatigue", brain.fatigue},
+                          {"food", brain.food},
+                          {"medicine", brain.medicine},
+                          {"coins", brain.coins},
+                          {"fear_memory", brain.memoryFear},
+                          {"action_held_seconds", brain.held},
+                          {"surrendered", brain.surrendered ? 1 : 0}};
+        entity.personality = {{"courage", traits.courage},
+                              {"empathy", traits.empathy},
+                              {"aggression", traits.aggression},
+                              {"lawfulness", traits.lawfulness},
+                              {"greed", traits.greed},
+                              {"curiosity", traits.curiosity},
+                              {"loyalty", traits.loyalty}};
+        town.metrics["resident_food_total"] += brain.food;
+        town.metrics["resident_medicine_total"] += brain.medicine;
+        town.metrics["resident_coins_total"] += brain.coins;
+        snapshot.entities.push_back(std::move(entity));
+    }
+
+    for (Actor::Id id : m->animals)
+    {
+        const auto* animal = static_cast<const Animal*>(m->scene.Find(id));
+        if (!animal)
+        {
+            continue;
+        }
+
+        WorldMonitor::Entity entity;
+        entity.id = std::to_string(id);
+        entity.settlementId = town.id;
+        entity.kind = animal->hostile ? "monster" : "wildlife";
+        entity.name = animal->hostile ? (animal->species == 0 ? L"늑대" : L"멧돼지")
+                                      : (animal->species == 0   ? L"사슴"
+                                         : animal->species == 1 ? L"여우"
+                                                                : L"산토끼");
+        entity.role = animal->hostile ? "test_beast" : "wildlife";
+        entity.hostile = animal->hostile;
+        entity.health = animal->hostile ? animal->brain.health : -1;
+        entity.maxHealth = animal->hostile ? 60 : -1;
+        entity.alive = !animal->hostile || animal->brain.health > 0;
+        entity.active = animal->IsActive();
+        entity.visible = animal->IsVisible();
+        entity.x = animal->Position().x;
+        entity.y = animal->Position().y;
+        entity.action = !entity.alive     ? "dead"
+                        : animal->hostile ? actionCode(animal->brain.action)
+                                          : "untracked";
+        entity.actionLabel = !entity.alive     ? L"사망 / 보충 대기"
+                             : animal->hostile ? VillageBehavior::Label(animal->brain.action)
+                                               : L"배회·도주 (상태 미계측)";
+        if (!entity.alive)
+        {
+            entity.metrics["respawn_remaining_seconds"] = std::max(0.f, animal->respawn);
+        }
+        snapshot.entities.push_back(std::move(entity));
+    }
+
+    WorldMonitor::Entity player;
+    player.id = std::to_string(m->player.GetId());
+    player.name = L"플레이어";
+    player.kind = "player";
+    player.settlementId = town.id;
+    player.role = "player";
+    player.action = m->playerMoving ? "moving" : "idle";
+    player.actionLabel = m->playerMoving ? L"이동" : L"대기";
+    player.health = m->playerHealth;
+    player.maxHealth = 100;
+    player.alive = m->playerHealth > 0;
+    player.active = m->player.IsActive();
+    player.visible = m->player.IsVisible();
+    player.x = m->player.Position().x;
+    player.y = m->player.Position().y;
+    player.metrics = {{"coins", m->playerCoins}, {"defeated", m->defeated}};
+    snapshot.entities.push_back(std::move(player));
+    snapshot.settlements.push_back(std::move(town));
+    return snapshot;
+}
 
 void TutorialGame::Resize(int width, int height)
 {

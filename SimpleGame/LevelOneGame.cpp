@@ -96,6 +96,7 @@ namespace
 
 struct LevelOneGame::Impl
 {
+    std::uint64_t monitorEpoch = 0;
     Renderer renderer{1280, 800};
     UiText text;
     SceneGraph scene;
@@ -214,6 +215,7 @@ struct LevelOneGame::Impl
 
     void Populate()
     {
+        monitorEpoch = WorldMonitor::NextEpoch();
         Profiler::Scope profile("world.populate");
         renderer.PrepareHuntingMap(map);
         // IDs never own actors. Reset category indexes when rebuilding the map.
@@ -790,6 +792,75 @@ LevelOneGame::LevelOneGame() : m(new Impl)
 }
 
 LevelOneGame::~LevelOneGame() = default;
+
+WorldMonitor::Snapshot LevelOneGame::CaptureMonitor() const
+{
+    Profiler::Scope profile("monitor.capture");
+    WorldMonitor::Snapshot snapshot;
+    snapshot.epoch = m->monitorEpoch;
+    snapshot.paused = m->help || m->statsOpen || m->dead;
+    snapshot.maxX = LevelOneMap::Width;
+    snapshot.maxY = LevelOneMap::Height;
+
+    WorldMonitor::Settlement camp;
+    camp.id = "hunting_camp";
+    camp.name = L"잿빛 사냥터 야영지";
+    camp.metrics = {{"map_seed", m->map.Seed()},
+                    {"loot_count", static_cast<double>(m->loot.size())},
+                    {"kills", m->kills}};
+    snapshot.settlements.push_back(camp);
+
+    for (Actor::Id id : m->enemies)
+    {
+        const auto* enemy = static_cast<const Enemy*>(m->scene.Find(id));
+        if (!enemy)
+        {
+            continue;
+        }
+
+        WorldMonitor::Entity entity;
+        entity.id = std::to_string(id);
+        entity.name = enemy->species == 0 ? L"늑대" : L"멧돼지";
+        entity.kind = "monster";
+        entity.settlementId = camp.id;
+        entity.role = "beast";
+        entity.alive = enemy->health > 0;
+        entity.health = enemy->health;
+        entity.maxHealth = enemy->MaxHealth();
+        entity.hostile = true;
+        entity.active = enemy->IsActive();
+        entity.visible = enemy->IsVisible();
+        entity.x = enemy->Position().x;
+        entity.y = enemy->Position().y;
+        entity.action = !entity.alive ? "dead" : enemy->windup > 0 ? "attack_windup" : "untracked";
+        entity.actionLabel = !entity.alive       ? L"사망 / 보충 대기"
+                             : enemy->windup > 0 ? L"공격 준비"
+                                                 : L"생존 (세부 행동 미계측)";
+        entity.metrics = {{"respawn_remaining_seconds", std::max(0.f, enemy->respawnTimer)},
+                          {"attack_windup_seconds", enemy->windup}};
+        snapshot.entities.push_back(std::move(entity));
+    }
+
+    WorldMonitor::Entity player;
+    player.id = std::to_string(m->player.GetId());
+    player.name = L"플레이어";
+    player.kind = "player";
+    player.settlementId = camp.id;
+    player.role = "player";
+    player.alive = !m->dead;
+    player.active = m->player.IsActive();
+    player.visible = m->player.IsVisible();
+    player.health = m->stats.health;
+    player.maxHealth = m->stats.MaxHealth();
+    player.x = m->player.Position().x;
+    player.y = m->player.Position().y;
+    player.action = m->dead ? "dead" : m->moving ? "moving" : "idle";
+    player.actionLabel = m->dead ? L"사망" : m->moving ? L"이동" : L"대기";
+    player.metrics = {
+        {"level", m->stats.level}, {"experience", m->stats.experience}, {"coins", m->stats.gold}};
+    snapshot.entities.push_back(std::move(player));
+    return snapshot;
+}
 
 void LevelOneGame::Resize(int width, int height)
 {

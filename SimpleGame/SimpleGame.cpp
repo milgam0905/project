@@ -30,6 +30,8 @@ namespace
     std::unique_ptr<GameMode> game;
     bool tutorialMode = true;
     bool profiling = true;
+    bool monitoring = true;
+    std::string monitorWorld;
     int previousTick = 0;
     double simulationDebt = 0;
     HWND gameWindow = nullptr;
@@ -94,6 +96,10 @@ namespace
             Profiler::Count("loop.simulation_substeps", steps);
             Profiler::Gauge("loop.simulation_debt_ms", simulationDebt * 1000);
         }
+        if (WorldMonitor::IsDue())
+        {
+            WorldMonitor::Publish(game->CaptureMonitor());
+        }
         if (game->WantsQuit())
         {
             glutLeaveMainLoop();
@@ -154,6 +160,7 @@ namespace
         }
         {
             Profiler::Scope profile("lifecycle.shutdown");
+            WorldMonitor::Stop();
             game.reset();
             RenderQueue::Shutdown();
         }
@@ -167,7 +174,9 @@ int main(int argc, char** argv)
     for (int i = 1; i < argc;)
     {
         if (std::strcmp(argv[i], "--tutorial") == 0 || std::strcmp(argv[i], "--village") == 0 ||
-            std::strcmp(argv[i], "--level-one") == 0 || std::strcmp(argv[i], "--no-profile") == 0)
+            std::strcmp(argv[i], "--level-one") == 0 || std::strcmp(argv[i], "--no-profile") == 0 ||
+            std::strcmp(argv[i], "--no-monitor") == 0 ||
+            std::strncmp(argv[i], "--world-id=", 11) == 0)
         {
             if (std::strcmp(argv[i], "--tutorial") == 0 || std::strcmp(argv[i], "--village") == 0)
             {
@@ -176,6 +185,23 @@ int main(int argc, char** argv)
             else if (std::strcmp(argv[i], "--level-one") == 0)
             {
                 tutorialMode = false;
+            }
+            else if (std::strcmp(argv[i], "--no-monitor") == 0)
+            {
+                monitoring = false;
+            }
+            else if (std::strncmp(argv[i], "--world-id=", 11) == 0)
+            {
+                monitorWorld = argv[i] + 11;
+                if (monitorWorld.empty() || monitorWorld.size() > 64 ||
+                    monitorWorld.find_first_not_of(
+                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-") !=
+                        std::string::npos)
+                {
+                    std::cerr
+                        << "Invalid --world-id (use 1-64 ASCII letters, digits, _, . or -).\n";
+                    return 1;
+                }
             }
             else
             {
@@ -217,6 +243,20 @@ int main(int argc, char** argv)
     else
     {
         game.reset(new LevelOneGame);
+    }
+    if (monitoring)
+    {
+        try
+        {
+            WorldMonitor::Start(monitorWorld.empty() ? (tutorialMode ? "village" : "level-one")
+                                                     : monitorWorld);
+            std::cout
+                << "[Monitor] Local receiver: http://127.0.0.1:8765 (start monitor/server.py separately)\n";
+        }
+        catch (const std::exception& error)
+        {
+            std::cerr << "[Monitor] Disabled: " << error.what() << '\n';
+        }
     }
     glutDisplayFunc(RenderScene);
     glutReshapeFunc(Resize);

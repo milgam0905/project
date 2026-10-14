@@ -16,6 +16,7 @@ class TutorialGame : public GameMode
     void KeyUp(unsigned char key) override;
     void ClearKeys() override;
     bool WantsQuit() const override;
+    WorldMonitor::Snapshot CaptureMonitor() const override;
 
   private:
     struct Impl;

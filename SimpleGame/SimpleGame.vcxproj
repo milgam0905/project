@@ -160,7 +160,7 @@
       <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>winhttp.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -175,6 +175,7 @@
     <ClInclude Include="RenderStats.h" />
     <ClInclude Include="RenderQueue.h" />
     <ClInclude Include="Profiler.h" />
+    <ClInclude Include="WorldMonitor.h" />
     <ClInclude Include="Actor.h" />
     <ClInclude Include="SceneGraph.h" />
     <ClInclude Include="RenderAssets.h" />
@@ -196,6 +197,7 @@
     <ClCompile Include="RenderStats.cpp" />
     <ClCompile Include="RenderQueue.cpp" />
     <ClCompile Include="Profiler.cpp" />
+    <ClCompile Include="WorldMonitor.cpp" />
     <ClCompile Include="Actor.cpp" />
     <ClCompile Include="SceneGraph.cpp" />
     <ClCompile Include="RenderAssets.cpp" />
