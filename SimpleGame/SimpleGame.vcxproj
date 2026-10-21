@@ -157,10 +157,11 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <LanguageStandard>stdcpp14</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)ArcanaSqlite;$(ProjectDir)..\docs\ARCANA_module\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>winhttp.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>winsqlite3.lib;winhttp.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -169,6 +170,8 @@
     <Text Include="..\ACTOR_SCENE_GRAPH.txt" />
     <Text Include="..\PERFORMANCE_PROFILING.txt" />
     <Text Include="..\docs\VILLAGE_TEST.md" />
+    <Text Include="..\docs\LENA_START_MAP.md" />
+    <Text Include="..\docs\ARCANA_INTEGRATION.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Renderer.h" />
@@ -176,6 +179,10 @@
     <ClInclude Include="RenderQueue.h" />
     <ClInclude Include="Profiler.h" />
     <ClInclude Include="WorldMonitor.h" />
+    <ClInclude Include="LenaGame.h" />
+    <ClInclude Include="LenaWorld.h" />
+    <ClInclude Include="ArcanaWorld.h" />
+    <ClInclude Include="ArcanaSqlite\sqlite3.h" />
     <ClInclude Include="Actor.h" />
     <ClInclude Include="SceneGraph.h" />
     <ClInclude Include="RenderAssets.h" />
@@ -198,6 +205,26 @@
     <ClCompile Include="RenderQueue.cpp" />
     <ClCompile Include="Profiler.cpp" />
     <ClCompile Include="WorldMonitor.cpp" />
+    <ClCompile Include="LenaGame.cpp">
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="ArcanaWorld.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <ClCompile Include="ArcanaNative.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <ClCompile Include="LenaWorld.cpp">
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="LenaWorldChecks.cpp">
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Actor.cpp" />
     <ClCompile Include="SceneGraph.cpp" />
     <ClCompile Include="RenderAssets.cpp" />
@@ -224,6 +251,11 @@
     <None Include="Shaders\SolidRect.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Target Name="CopyArcanaContent" AfterTargets="Build">
+    <MakeDir Directories="$(OutDir)assets\arcana" />
+    <Copy SourceFiles="$(ProjectDir)..\docs\ARCANA_module\data\blood_principle_game.db"
+          DestinationFiles="$(OutDir)assets\arcana\blood_principle_game.db" SkipUnchangedFiles="true" />
+  </Target>
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>

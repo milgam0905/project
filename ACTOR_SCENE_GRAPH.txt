@@ -7,6 +7,12 @@ Actor / SceneGraph 개발 기준
 SceneGraph가 Actor를 소유하고 부모·자식 관계, 업데이트, 렌더 순서,
 활성화·표시 상태와 제거를 관리한다.
 첫 레벨과 --tutorial 모드에 모두 적용한다.
+현재 기본 --arcana 및 보존 --lena 모드에도 적용한다. Lena::World의 people 목록은 ID 참조만 보관하며,
+SceneGraph가 모든 Person/지형/건물/나무/표식/HUD와 시뮬레이션 콜백 Actor를 소유한다.
+사망한 Person은 같은 ID의 유한 사체 컨테이너로 남고, 업데이트에서 생존 행동을 중단한다.
+LenaSimulation Actor가 상호작용을 고정 ID 순서로 처리한다. 별도 렌더 정렬 목록은 없다.
+Arcana::Module은 DB 콘텐츠/진행 상태와 Actor ID 연결을 관리하며 Actor를 별도로 소유하지 않는다.
+불탄 집, 지형/건물/나무, 주문 불꽃, HUD도 SceneGraph Actor로 배치한다.
 
 Renderer는 여전히 실제 OpenGL 그리기와 텍스처/셰이더를 담당한다.
 GameMode는 입력, 퀘스트, 경험치 등 게임 규칙을 담당한다.

@@ -17,12 +17,16 @@
 게임 실행 옵션:
 
 ```text
+SimpleGame.exe --arcana
+SimpleGame.exe --lena
 SimpleGame.exe --village
 SimpleGame.exe --level-one --world-id=ash-region
 SimpleGame.exe --no-monitor
 ```
 
-기본 world_id는 마을 모드 `village`, 레벨 1 `level-one`입니다. `--world-id`는 1~64자의 영문자·숫자·밑줄·점·하이픈을 허용합니다. `--no-profile`은 성능 로그만 끄고 모니터는 유지합니다. `--no-monitor`는 캡처와 전송 모두 끕니다.
+기본 실행은 ARCANA이며 world_id는 `WORLD_ARCANA_BELHEIM`, 마을 ID는 `belheim`입니다. 레나는 `--lena`와 `WORLD_AERIA_LENA`, 기존 마을 모드는 `village`, 레벨 1은 `level-one`입니다. `--world-id`는 1~64자의 영문자·숫자·밑줄·점·하이픈을 허용합니다. `--no-profile`은 성능 로그만 끄고 모니터는 유지합니다. `--no-monitor`는 캡처와 전송 모두 끕니다.
+
+ARCANA 개체 JSON에는 `mana_current`, `mana_max`, `is_beast`, `mana_absorbed`가 포함됩니다. 월드 지표의 `arcana.quest_step`, `arcana.territory_disturbance`, `arcana.knight_dispatched`로 진행과 사건을 확인할 수 있습니다. 원격 도시는 현재 시작 맵의 실제 배치 개체 수에 포함하지 않습니다.
 
 ## 표시 내용과 의미
 
@@ -31,7 +35,7 @@ SimpleGame.exe --no-monitor
 - 마을별 소속 개체 수, 체력 25% 이하인 생존 NPC, 적대 NPC, 항복 NPC.
 - NPC 행동(WBG 코드와 한글 설명), 체력, 위치, 대상 ID, 활성·표시 플래그, 배고픔·갈증·피로, 소지품, 7가지 성격 지표.
 - 이름·역할·행동 검색, 종류·마을·생존 상태 필터, 50개씩 페이지 표시, 개체 원본 JSON.
-- 식량·약품·화폐는 **주민 개인 보유량 합계**이며 마을 공동 창고나 경제 지수가 아닙니다. 미구현 경제·치안 지수는 ‘미수집’입니다.
+- resident_* 지표는 **주민 개인 보유량 합계**이며 창고 재고가 아닙니다. 레나 모드는 별도로 실제 창고 식량·사기·치안·오염을 전송합니다. 해당 지표를 보내지 않는 기존 모드나 미구현 경제 종합 지수는 ‘미수집’입니다.
 - 현재 마을 주변 몹은 해당 마을의 관리 소속으로 보내며 실제 마을 경계 안에 있다는 뜻이 아닙니다. 레벨 1의 야영지는 마을 항목으로 묶고, 실제 NPC가 없으므로 NPC 0명입니다.
 - Actor의 visible은 자체 표시 플래그이며 카메라에 보이는지 또는 부모가 숨겨졌는지를 나타내지 않습니다.
 - 미계측 값은 null/‘미수집’. 야생동물 체력과 레벨 1의 세부 AI 행동 등은 임의로 만들어내지 않습니다.

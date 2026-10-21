@@ -22,6 +22,8 @@
     <Text Include="..\LEVEL_ONE_DESIGN.txt" />
     <Text Include="..\ACTOR_SCENE_GRAPH.txt" />
     <Text Include="..\PERFORMANCE_PROFILING.txt" />
+    <Text Include="..\docs\LENA_START_MAP.md" />
+    <Text Include="..\docs\ARCANA_INTEGRATION.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -45,6 +47,10 @@
     <ClInclude Include="WorldMonitor.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="LenaGame.h"><Filter>헤더 파일</Filter></ClInclude>
+    <ClInclude Include="LenaWorld.h"><Filter>헤더 파일</Filter></ClInclude>
+    <ClInclude Include="ArcanaWorld.h"><Filter>헤더 파일</Filter></ClInclude>
+    <ClInclude Include="ArcanaSqlite\sqlite3.h"><Filter>헤더 파일</Filter></ClInclude>
     <ClInclude Include="Actor.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -96,6 +102,11 @@
     <ClCompile Include="WorldMonitor.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="LenaGame.cpp"><Filter>소스 파일</Filter></ClCompile>
+    <ClCompile Include="LenaWorld.cpp"><Filter>소스 파일</Filter></ClCompile>
+    <ClCompile Include="ArcanaWorld.cpp"><Filter>소스 파일</Filter></ClCompile>
+    <ClCompile Include="ArcanaNative.cpp"><Filter>소스 파일</Filter></ClCompile>
+    <ClCompile Include="LenaWorldChecks.cpp"><Filter>소스 파일</Filter></ClCompile>
     <ClCompile Include="Actor.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>

@@ -1,0 +1,428 @@
+{
+  "source_sha256": "7f42a8c4c0196af0fe30332b36ad305ce29f213e2d3a9595d43525c768b77cb3",
+  "table_count": 40,
+  "row_counts": {
+    "active_actions": 0,
+    "beast_species": 4,
+    "behavior_nodes": 39,
+    "behavior_profiles": 4,
+    "characters": 7,
+    "contracts": 0,
+    "crimes": 0,
+    "entities": 9,
+    "entity_goals": 0,
+    "entity_knowledge": 0,
+    "entity_traits": 7,
+    "event_templates": 8,
+    "event_witnesses": 0,
+    "faction_memberships": 0,
+    "factions": 7,
+    "family_links": 0,
+    "game_meta": 5,
+    "inventories": 0,
+    "knowledge": 7,
+    "lore": 8,
+    "mana_absorptions": 0,
+    "mana_hunt_history": 0,
+    "memories": 0,
+    "populations": 3,
+    "profile_nodes": 156,
+    "quest_progress": 10,
+    "quest_steps": 11,
+    "quests": 10,
+    "regions": 5,
+    "relationships": 0,
+    "settlement_states": 3,
+    "settlements": 3,
+    "simulation_jobs": 0,
+    "simulation_rules": 6,
+    "species": 7,
+    "spell_knowledge": 6,
+    "spells": 6,
+    "territories": 1,
+    "world_events": 0,
+    "world_saves": 1
+  },
+  "integrity": [
+    [
+      "ok"
+    ]
+  ],
+  "foreign_key_errors": [],
+  "behavior_nodes": [
+    {
+      "id": 1,
+      "name": "Evaluate",
+      "category": "cognition",
+      "enabled_profiles": [
+        "beast",
+        "herbivore",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Observe",
+      "category": "cognition",
+      "enabled_profiles": [
+        "beast",
+        "herbivore",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Investigate",
+      "category": "cognition",
+      "enabled_profiles": [
+        "beast",
+        "herbivore",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Remember",
+      "category": "cognition",
+      "enabled_profiles": [
+        "beast",
+        "herbivore",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Decide",
+      "category": "cognition",
+      "enabled_profiles": [
+        "beast",
+        "herbivore",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Idle",
+      "category": "basic",
+      "enabled_profiles": [
+        "beast",
+        "herbivore",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Wander",
+      "category": "basic",
+      "enabled_profiles": [
+        "beast",
+        "herbivore",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Travel",
+      "category": "basic",
+      "enabled_profiles": [
+        "beast",
+        "herbivore",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Sleep",
+      "category": "basic",
+      "enabled_profiles": [
+        "beast",
+        "herbivore",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Eat",
+      "category": "basic",
+      "enabled_profiles": [
+        "beast",
+        "herbivore",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Drink",
+      "category": "basic",
+      "enabled_profiles": [
+        "beast",
+        "herbivore",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "Work",
+      "category": "basic",
+      "enabled_profiles": [
+        "human"
+      ]
+    },
+    {
+      "id": 13,
+      "name": "Rest",
+      "category": "basic",
+      "enabled_profiles": [
+        "beast",
+        "herbivore",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 14,
+      "name": "Talk",
+      "category": "social",
+      "enabled_profiles": [
+        "human"
+      ]
+    },
+    {
+      "id": 15,
+      "name": "Greet",
+      "category": "social",
+      "enabled_profiles": [
+        "human"
+      ]
+    },
+    {
+      "id": 16,
+      "name": "Trade",
+      "category": "social",
+      "enabled_profiles": [
+        "human"
+      ]
+    },
+    {
+      "id": 17,
+      "name": "Help",
+      "category": "social",
+      "enabled_profiles": [
+        "human"
+      ]
+    },
+    {
+      "id": 18,
+      "name": "Follow",
+      "category": "social",
+      "enabled_profiles": [
+        "human"
+      ]
+    },
+    {
+      "id": 19,
+      "name": "Avoid",
+      "category": "social",
+      "enabled_profiles": [
+        "beast",
+        "herbivore",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 20,
+      "name": "Warn",
+      "category": "social",
+      "enabled_profiles": [
+        "beast",
+        "herbivore",
+        "human"
+      ]
+    },
+    {
+      "id": 21,
+      "name": "CallHelp",
+      "category": "social",
+      "enabled_profiles": [
+        "herbivore",
+        "human"
+      ]
+    },
+    {
+      "id": 22,
+      "name": "Argue",
+      "category": "conflict",
+      "enabled_profiles": [
+        "human"
+      ]
+    },
+    {
+      "id": 23,
+      "name": "Threaten",
+      "category": "conflict",
+      "enabled_profiles": [
+        "human"
+      ]
+    },
+    {
+      "id": 24,
+      "name": "Intimidate",
+      "category": "conflict",
+      "enabled_profiles": [
+        "human"
+      ]
+    },
+    {
+      "id": 25,
+      "name": "Steal",
+      "category": "conflict",
+      "enabled_profiles": [
+        "human"
+      ]
+    },
+    {
+      "id": 26,
+      "name": "Chase",
+      "category": "conflict",
+      "enabled_profiles": [
+        "beast",
+        "herbivore",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 27,
+      "name": "Surrender",
+      "category": "conflict",
+      "enabled_profiles": [
+        "human"
+      ]
+    },
+    {
+      "id": 28,
+      "name": "Attack",
+      "category": "combat",
+      "enabled_profiles": [
+        "beast",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 29,
+      "name": "Defend",
+      "category": "combat",
+      "enabled_profiles": [
+        "beast",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 30,
+      "name": "Dodge",
+      "category": "combat",
+      "enabled_profiles": [
+        "beast",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 31,
+      "name": "Flee",
+      "category": "combat",
+      "enabled_profiles": [
+        "beast",
+        "herbivore",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 32,
+      "name": "SeekCover",
+      "category": "combat",
+      "enabled_profiles": [
+        "beast",
+        "human"
+      ]
+    },
+    {
+      "id": 33,
+      "name": "Protect",
+      "category": "combat",
+      "enabled_profiles": [
+        "beast",
+        "herbivore",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 34,
+      "name": "Hunt",
+      "category": "combat",
+      "enabled_profiles": [
+        "beast",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 35,
+      "name": "Kill",
+      "category": "combat",
+      "enabled_profiles": [
+        "beast",
+        "human",
+        "predator"
+      ]
+    },
+    {
+      "id": 36,
+      "name": "InspectBody",
+      "category": "aftermath",
+      "enabled_profiles": [
+        "human"
+      ]
+    },
+    {
+      "id": 37,
+      "name": "Loot",
+      "category": "aftermath",
+      "enabled_profiles": [
+        "human"
+      ]
+    },
+    {
+      "id": 38,
+      "name": "Mourn",
+      "category": "aftermath",
+      "enabled_profiles": [
+        "human"
+      ]
+    },
+    {
+      "id": 39,
+      "name": "Report",
+      "category": "aftermath",
+      "enabled_profiles": [
+        "human"
+      ]
+    }
+  ]
+}

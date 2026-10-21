@@ -16,6 +16,8 @@ but WITHOUT ANY WARRANTY.
 #include "Dependencies/freeglut.h"
 #include "TutorialGame.h"
 #include "LevelOneGame.h"
+#include "LenaGame.h"
+#include "LenaWorld.h"
 #include "GameMode.h"
 #include "RenderStats.h"
 #include "RenderQueue.h"
@@ -28,7 +30,9 @@ but WITHOUT ANY WARRANTY.
 namespace
 {
     std::unique_ptr<GameMode> game;
-    bool tutorialMode = true;
+    bool tutorialMode = false;
+    bool lenaMode = true;
+    bool arcanaMode = true;
     bool profiling = true;
     bool monitoring = true;
     std::string monitorWorld;
@@ -170,21 +174,59 @@ namespace
 
 int main(int argc, char** argv)
 {
+    // Explicit user-run headless checks; never run during ordinary startup.
+    for (int i = 1; i < argc; ++i)
+    {
+        if (std::strcmp(argv[i], "--arcana-self-test") == 0)
+        {
+            try
+            {
+                return Lena::World::ArcanaSelfTest() ? 0 : 1;
+            }
+            catch (const std::exception& error)
+            {
+                std::cerr << "[ArcanaCheck] " << error.what() << '\n';
+                return 1;
+            }
+        }
+        if (std::strcmp(argv[i], "--lena-self-test") == 0)
+        {
+            return Lena::World::SelfTest() ? 0 : 1;
+        }
+    }
+
     // Strip the game-specific option before passing arguments to FreeGLUT.
     for (int i = 1; i < argc;)
     {
         if (std::strcmp(argv[i], "--tutorial") == 0 || std::strcmp(argv[i], "--village") == 0 ||
-            std::strcmp(argv[i], "--level-one") == 0 || std::strcmp(argv[i], "--no-profile") == 0 ||
+            std::strcmp(argv[i], "--level-one") == 0 || std::strcmp(argv[i], "--lena") == 0 ||
+            std::strcmp(argv[i], "--arcana") == 0 || std::strcmp(argv[i], "--no-profile") == 0 ||
             std::strcmp(argv[i], "--no-monitor") == 0 ||
             std::strncmp(argv[i], "--world-id=", 11) == 0)
         {
             if (std::strcmp(argv[i], "--tutorial") == 0 || std::strcmp(argv[i], "--village") == 0)
             {
                 tutorialMode = true;
+                lenaMode = false;
+                arcanaMode = false;
             }
             else if (std::strcmp(argv[i], "--level-one") == 0)
             {
                 tutorialMode = false;
+                lenaMode = false;
+                arcanaMode = false;
+            }
+            else if (std::strcmp(argv[i], "--lena") == 0)
+            {
+                lenaMode = true;
+                tutorialMode = false;
+                arcanaMode = false;
+            }
+            else if (std::strcmp(argv[i], "--arcana") == 0)
+            {
+                lenaMode = true;
+                tutorialMode = false;
+                arcanaMode = true;
             }
             else if (std::strcmp(argv[i], "--no-monitor") == 0)
             {
@@ -224,8 +266,7 @@ int main(int argc, char** argv)
     // Renderer uses compatibility drawing plus optional framebuffer post-processing.
     glutInitContextVersion(2, 1);
     glutInitWindowSize(1280, 800);
-    glutCreateWindow(tutorialMode ? "SimpleGame - Storyline1 / Expanded Village Test"
-                                  : "SimpleGame - Level 1 / Ashen Hunting Grounds");
+    glutCreateWindow("ARCANA");
     glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
     if (glewInit() != GLEW_OK || !GLEW_VERSION_2_1)
     {
@@ -234,21 +275,44 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    Profiler::Initialize(profiling, tutorialMode ? "tutorial" : "level_one");
+    Profiler::Initialize(profiling,
+                         arcanaMode     ? "arcana"
+                         : lenaMode     ? "lena"
+                         : tutorialMode ? "tutorial"
+                                        : "level_one");
     gameWindow = WindowFromDC(wglGetCurrentDC());
-    if (tutorialMode)
+    SetWindowTextW(gameWindow, L"\uc544\ub974\uce74\ub098 : ARCANA");
+    try
     {
-        game.reset(new TutorialGame);
+        if (lenaMode)
+        {
+            game.reset(new LenaGame(arcanaMode));
+        }
+        else if (tutorialMode)
+        {
+            game.reset(new TutorialGame);
+        }
+        else
+        {
+            game.reset(new LevelOneGame);
+        }
     }
-    else
+    catch (const std::exception& error)
     {
-        game.reset(new LevelOneGame);
+        std::cerr << "[ARCANA] Initialization failed: " << error.what() << '\n';
+        MessageBoxA(gameWindow, error.what(), "ARCANA - Content error", MB_OK | MB_ICONERROR);
+        Profiler::Shutdown();
+        glutDestroyWindow(glutGetWindow());
+        return 1;
     }
     if (monitoring)
     {
         try
         {
-            WorldMonitor::Start(monitorWorld.empty() ? (tutorialMode ? "village" : "level-one")
+            WorldMonitor::Start(monitorWorld.empty() ? (arcanaMode     ? "WORLD_ARCANA_BELHEIM"
+                                                        : lenaMode     ? "WORLD_AERIA_LENA"
+                                                        : tutorialMode ? "village"
+                                                                       : "level-one")
                                                      : monitorWorld);
             std::cout
                 << "[Monitor] Local receiver: http://127.0.0.1:8765 (start monitor/server.py separately)\n";

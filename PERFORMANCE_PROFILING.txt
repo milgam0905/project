@@ -46,7 +46,7 @@ RenderQueue::Texture/EnableTexture/Color/TexCoord는 제출할 정점/명령의 
 3. 로그 사용 방법
 
 기본 실행: 콘솔 + JSONL 파일에 프로파일링을 출력한다.
-현재 기본 레벨: storyline1 확장 마을. --village / --tutorial도 동일하다.
+현재 기본 레벨: 아르카나 북부 숲/벨하임 (--arcana). 레나는 --lena, 기존 확장 마을은 --village / --tutorial이다.
 --level-one: 기존 첫 레벨 사냥터를 실행한다.
 --tutorial: 튜토리얼에 동일한 프로파일링을 적용한다.
 --no-profile: 타이머/통계 로그/GPU query를 끈다. 최적화 자체는 유지된다.
@@ -304,3 +304,50 @@ render.world, draw_calls_per_frame, batch.split_topology, upload.dynamic_buffer_
 수신기 꺼짐은 정상적으로 발생 가능한 개발 환경 상태다. 실패 건수만으로 게임 병목을 단정하지 않는다.
 모니터 서버/브라우저 CPU 비용은 이 게임 프로파일러의 측정 범위 밖이다.
 수신기와 JSON 규격, 사용법은 monitor/README.md를 참고한다.
+
+11. 레나 시작 맵
+
+CPU ms: lena.initialize, lena.scene_setup, lena.navigation_build, lena.simulation,
+  lena.spatial_index, lena.observe, lena.decide, lena.pathfind, lena.damage_transaction,
+  lena.economy, lena.story, lena.save, lena.load, lena.terrain_submit, lena.hud.
+Count: lena.perception_candidates (근접 후보 개체 수), lena.action_changes,
+  lena.path_requests, lena.path_deferred, lena.hits, lena.deaths,
+  lena.heal_transactions, lena.trade_transactions, lena.theft_transactions, lena.reports_received.
+Gauge: lena.population (생존 소속 주민), lena.food_rations (창고 배급 단위),
+  lena.fact_count (보관 사건 수), lena.wolf_count, lena.deer_count.
+
+판단 1초/공간 색인 0.25초. 이동과 전투는 고정 업데이트로 진행한다.
+근접 탐색은 6단위 공간 버킷으로 후보를 좁힌다. 경로 탐색은 업데이트당 최대 2회.
+죽음이 발생해도 개체 Actor를 삭제/재생성하지 않고 같은 ID의 사체 컨테이너로 유지한다.
+관측한 사실을 세션 내 보관하므로 장시간 실행에서 fact_count, observe, save/load를 함께 본다.
+새 모드의 실제 성능 및 모든 동적 상호작용 결과는 빌드/실행으로 검증하지 않았다.
+
+12. ARCANA DB 기반 시작 맵
+
+파란 구체: arcana.orb_launch / arcana.orb_update (CPU ms),
+  arcana.orbs_launched / arcana.orb_hits (횟수), arcana.orbs_active (현재 개체 수).
+SceneGraph 소유 Actor이며 공통 render.world에서 RenderQueue로 제출한다.
+충돌은 최대 0.1 월드 단위 분할 검사, 피해는 접촉 1회만 확정한다.
+
+session_start.mode = arcana. 공통 렌더/충돌/거래/저장 경로의 lena.* 키는 유지한다.
+CPU ms (inclusive): arcana.content_load, arcana.seed_actors, arcana.wbg_decide,
+  arcana.story_update, arcana.interaction, arcana.spell_cast, arcana.hud.
+Count: arcana.wbg_decisions (선택기 호출 수), arcana.wbg_valid_candidates (후보 수),
+  arcana.spells_cast (마력 소모가 확정된 시전), arcana.mana_absorptions (확정 흡수),
+  arcana.knight_dispatches (신고를 받아 현장 조사에 출발한 횟수).
+Gauge: arcana.quest_step (0~7), arcana.player_mana_current / player_mana_max (마력 단위),
+  arcana.territory_disturbance (0~100).
+
+미니맵: arcana.minimap_build (정적 지형/표식 바탕 계산 CPU ms),
+  arcana.minimap_submit (캐시 지형과 동적 개체 표식 제출 CPU ms),
+  arcana.minimap_builds (새 게임당 생성 횟수),
+  arcana.minimap_cache_bytes (보관 정점 데이터 사용 바이트).
+실제 렌더 지형 패치와 호수 경계를 공유하고 동일 쿼터뷰 투영을 사용한다.
+정적 지형은 시작 시 한 번 계산하며 RenderQueue 삼각형 배칭으로 제출한다.
+
+콘텐츠 DB SQL은 초기화 시 읽는다. 매 프레임 SQL을 실행하지 않는다.
+AI 판단 주기는 실제 시뮬레이션 1초이며 공간 색인/시야/경로 제한은 기존 경로를 사용한다.
+WBG 39개 노드의 로드 여부와 실제 유효 후보/실행된 행동 수를 혼동하지 않는다.
+장기 실행은 lena.fact_count와 lena.observe, 저장 크기도 함께 확인한다.
+새 모드의 시간 배율은 1:1이므로 레나의 사건 빈도와 직접 비교하지 않는다.
+FPS/CPU/GPU 개선 여부는 측정하지 않았으며 빌드 및 플레이 검증은 사용자 수행이다.

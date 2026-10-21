@@ -15,6 +15,11 @@ namespace WorldGeometry
         return {(p.x - p.y) * 42.f, (p.x + p.y) * 21.f};
     }
 
+    inline RenderPoint UnprojectDelta(RenderPoint screen)
+    {
+        return {screen.x / 84.f + screen.y / 42.f, -screen.x / 84.f + screen.y / 42.f};
+    }
+
     inline float LakeRadius(float angle)
     {
         return 1.f + .075f * std::sin(angle * 3.f + .5f) + .045f * std::cos(angle * 5.f);

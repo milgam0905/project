@@ -174,7 +174,12 @@ function render()
             `주민 보유량 합계: 식량 ${format(m.resident_food_total)} / 약품 ${
                 format(m.resident_medicine_total)} / 화폐 ${format(m.resident_coins_total)}`,
             "muted"));
-        panel.append(element("p", "마을 경제·치안 지수: 미수집", "muted"));
+        panel.append(element("p",
+                             `창고 식량 ${format(m.food_stock)} · 사기 ${format(m.morale)} · 치안 ${
+                                 format(m.security)}`,
+                             "muted"));
+        panel.append(element(
+            "p", `오염 ${format(m.aether_pollution)} · 경제 지수 ${format(m.economy)}`, "muted"));
         const more = element("details"), pre = element("pre", JSON.stringify(m, null, 2));
         more.dataset.town = town.id;
         more.open = openedTowns.has(town.id);

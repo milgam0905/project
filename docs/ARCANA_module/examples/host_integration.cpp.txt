@@ -1,0 +1,39 @@
+// Integration skeleton for your EXISTING game. GameAPI below represents your engine,
+// not a dependency included in this package. Map these calls to existing functions.
+#include "bp/native.hpp"
+namespace n=bp::native;
+
+struct GameHost final : n::Host {
+    GameAPI& game;
+    explicit GameHost(GameAPI& g):game(g){}
+    std::optional<n::Candidate> probe(const n::Entity&e,const n::Node&node) override {
+        // Check action-specific preconditions, same-save entity targets, resources,
+        // reachability, visibility, consent and combat state, then supply utility terms.
+        return game.evaluateActionCandidate(e.id,node.name);
+    }
+    void execute(const n::Intent&i) override {
+        if(i.changed)game.startAction(i.entity,i.name,i.target);
+        else game.continueAction(i.entity,i.name,i.target);
+    }
+};
+// Existing initialization:
+auto content=n::load("runtime.db","demo");
+n::Scheduler scheduler(content);
+n::RuntimeStore store("runtime.db");
+GameHost host(game);
+
+// Existing AI update, on its owning thread. Keep your OpenGL render path as is.
+for(auto& entity:content.entities){
+    game.copyLatestSimulationFields(entity); // Update region, needs, alive etc from authority.
+    if(entity.id=="player")continue;
+    const auto interruption=game.currentInterrupt(entity.id);
+    scheduler.decide(entity,game.worldSeconds(),host,interruption);
+}
+// Call these from existing event handling after engine validation, not every frame:
+// store.recordDeath("demo",deadBeastId,game.worldSeconds()/3600);
+// n::Eligibility proof{verifiedBloodline,verifiedContributor,verifiedAbsorptionRange};
+// double gain=store.absorb("demo",mageId,deadBeastId,game.worldSeconds()/3600,proof);
+// Refresh game mana_max from the runtime DB; do not apply the gain twice.
+
+// Existing save boundary (other entity fields/inventory/relationships saved by your engine):
+store.saveActions("demo",game.worldSeconds()/3600,scheduler.actions());
