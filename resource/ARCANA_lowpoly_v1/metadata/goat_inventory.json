@@ -1,0 +1,34 @@
+{
+  "asset": {
+    "id": "goat",
+    "category": "animal",
+    "path": "animals/goat.glb",
+    "triangles": 1762,
+    "meshes": 5,
+    "temperament": "neutral",
+    "diet": "herbivore",
+    "gait": "four-beat walk / paired bounding gallop",
+    "walk_speed_mps": 0.4706,
+    "run_speed_mps": 2.3721
+  },
+  "parts": [
+    "goat_body_base",
+    "goat_legs_base",
+    "goat_head_base",
+    "goat_tail_base",
+    "goat_horns_base"
+  ],
+  "clips": [
+    "Reference",
+    "Idle",
+    "Walk",
+    "Run",
+    "Turn_L90",
+    "Turn_R90",
+    "Turn_Base",
+    "Attack",
+    "Jump"
+  ],
+  "compatibility": "Swap only within species and rig version. Antlers/horns/tusks/ruff optional; no cross-species leg swapping.",
+  "temperament_note": "Visual design classification; game AI and combat behavior are not implemented by these assets."
+}

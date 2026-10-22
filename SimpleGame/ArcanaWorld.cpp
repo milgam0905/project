@@ -230,15 +230,17 @@ namespace Arcana
         {
             maximum[species.Text(0)] = static_cast<float>(species.Number(1));
         }
+        PrepareMonsterSpawns();
         std::map<std::string, RenderPoint> positions = {{"player", world.canal},
                                                         {"serdin_01", {-13, -14}},
                                                         {"bran_01", forge},
                                                         {"leon_01", outpost},
-                                                        {"thomas_01", {-10, 16}},
+                                                        {"thomas_01", {-4, 3}},
                                                         {"ella_01", {3, 4}},
-                                                        {"beast_01", territory},
-                                                        {"wolf_01", {-21, 5}}};
-        auto add = [&](const bp::native::Entity& entity, RenderPoint position, Role role)
+                                                        {"isela_01", Villages()[1].center},
+                                                        {"beast_01", monsterSpawns.front()},
+                                                        {"wolf_01", {-25, 10}}};
+        auto add = [&](bp::native::Entity entity, RenderPoint position, Role role, int village)
         {
             Species type = entity.kind == "human"          ? Species::Human
                            : entity.profile == "herbivore" ? Species::Deer
@@ -246,23 +248,21 @@ namespace Arcana
             auto& p = world.Spawn(entity.id, Wide(entity.name), type, role, position);
             p.profile = entity.profile;
             p.speciesId = entity.species;
-            p.region = entity.region;
+            p.region = village >= 0 ? Villages()[village].region : entity.region;
             p.beast = entity.kind == "beast";
             p.maxHealth = maximum.at(entity.species);
             p.state.health = static_cast<float>(entity.health);
             p.state.manaCurrent = static_cast<float>(entity.manaCurrent);
             p.state.manaMax = static_cast<float>(entity.manaMax);
-            p.state.hunger = static_cast<float>(entity.hunger);
+            p.state.hunger = p.beast ? 35.f : static_cast<float>(entity.hunger);
             p.state.thirst = static_cast<float>(entity.thirst);
             p.state.fatigue = static_cast<float>(entity.fatigue);
-            p.state.fear = static_cast<float>(entity.fear);
-            p.state.anger = static_cast<float>(entity.anger);
             p.state.coins = static_cast<float>(entity.wealth);
-            p.settlement =
-                entity.kind == "human" && entity.region == "belheim_region" && role != Role::Bandit
-                    ? 0
-                    : -1;
-            definitions.emplace(entity.id, entity);
+            p.state.habitat = p.home;
+            p.settlement = village;
+            entity.region = p.region;
+            definitions.emplace(entity.id, std::move(entity));
+            actorIds[p.key] = p.GetId();
             return p.GetId();
         };
         for (const auto& entity : content.entities)
@@ -270,14 +270,18 @@ namespace Arcana
             auto position = positions.find(entity.id);
             if (position == positions.end())
             {
-                continue; // Arsen/Isela is not teleported into the starting map.
+                continue;
             }
             Role role = entity.id == "player"              ? Role::Player
                         : entity.occupation == "knight"    ? Role::Guard
                         : entity.occupation == "herbalist" ? Role::Healer
-                        : entity.occupation == "mage"      ? Role::Scholar
-                                                           : Role::Resident;
-            auto id = add(entity, position->second, role);
+                        : entity.occupation == "mage" || entity.occupation == "oracle_mage"
+                            ? Role::Scholar
+                            : Role::Resident;
+            int village = entity.kind != "human" || role == Role::Player ? -1
+                          : entity.id == "isela_01"                      ? 1
+                                                                         : 0;
+            auto id = add(entity, position->second, role, village);
             if (role == Role::Player)
             {
                 world.playerId = id;
@@ -286,87 +290,92 @@ namespace Arcana
             {
                 world.darianId = id;
             }
-            if (entity.id == "ella_01")
+            if (role == Role::Healer)
             {
-                world.Find(id)->state.medicine = 8; // Authored opening provision, not DB inventory.
+                world.Find(id)->state.medicine = 8;
             }
         }
         if (!world.playerId || !Named("serdin_01") || !Named("bran_01") || !world.darianId)
         {
             throw std::runtime_error("ARCANA opening characters missing");
         }
-        // Materialize Belheim's population once: four named residents plus ordinary residents.
-        Query town(database,
-                   "SELECT population,food,wealth,security FROM settlement_states "
-                   "WHERE save_id='demo' AND settlement_id='belheim'");
-        if (!town.Next() || town.Number(0) < 4 || town.Number(0) > 500)
-        {
-            throw std::runtime_error("Unsupported Belheim population");
-        }
-        world.town.food = town.Number(1);
-        world.town.treasury = town.Number(2);
-        world.town.security = town.Number(3);
-        world.town.pollution = 0;
-        int residents = static_cast<int>(town.Number(0)) - 4;
-        for (int i = 0; i < residents; ++i)
-        {
-            auto entity = definitions.at("thomas_01");
-            entity.id = "arcana:resident:" + std::to_string(i);
-            entity.name = "벨하임 주민 " + std::to_string(i + 1);
-            auto role = i < 5 ? Role::Guard : i < 15 ? Role::Merchant : Role::Resident;
-            auto id =
-                add(entity, {static_cast<float>(i % 10 - 4), static_cast<float>(i / 10 + 2)}, role);
-            auto* p = world.Find(id);
-            p->work = world.Safe({static_cast<float>(i % 8 - 13), static_cast<float>(i % 6 + 12)});
-        }
-        Query populations(
+        Query towns(
             database,
-            "SELECT p.id,p.region_id,p.species_id,p.count,s.name_ko,s.kind,s.behavior_profile,"
-            "s.base_health,s.base_mana FROM populations p JOIN species s ON s.id=p.species_id "
-            "WHERE p.save_id='demo' ORDER BY p.id");
-        while (populations.Next())
+            "SELECT settlement_id,food,wealth,security FROM settlement_states WHERE save_id='demo'");
+        while (towns.Next())
         {
-            const auto region = populations.Text(1);
-            if (region != "north_forest" && region != "belheim_region")
+            for (int v = 0; v < 5; ++v)
             {
-                continue;
-            }
-            int existing = 0;
-            for (const auto& pair : definitions)
-            {
-                existing +=
-                    pair.second.species == populations.Text(2) && pair.second.region == region;
-            }
-            int total = static_cast<int>(populations.Number(3));
-            if (total < existing || total > 500)
-            {
-                throw std::runtime_error("Unsupported ARCANA population count");
-            }
-            for (int i = existing; i < total; ++i)
-            {
-                bp::native::Entity e;
-                e.id = "arcana:" + populations.Text(0) + ":" + std::to_string(i);
-                e.save = "demo";
-                e.species = populations.Text(2);
-                e.name = populations.Text(4) + " " + std::to_string(i + 1);
-                e.kind = populations.Text(5);
-                e.profile = populations.Text(6);
-                e.region = e.homeRegion = region;
-                e.health = populations.Number(7);
-                e.manaCurrent = e.manaMax = populations.Number(8);
-                RenderPoint position = e.kind == "beast" ? RenderPoint{18.f + i, 17.f}
-                                                         : RenderPoint{-22.f + i % 6, 2.f + i / 6};
-                add(e, position, Role::Resident);
+                if (Villages()[v].id == towns.Text(0))
+                {
+                    Town(v).food = towns.Number(1);
+                    Town(v).treasury = towns.Number(2);
+                    Town(v).security = towns.Number(3);
+                }
             }
         }
-        for (int i = 0; i < 3; ++i)
+        for (int v = 0; v < 5; ++v)
         {
-            auto entity = definitions.at("thomas_01");
-            entity.id = "arcana:bandit:" + std::to_string(i);
-            entity.name = "길목 약탈자 " + std::to_string(i + 1);
-            entity.hunger = 80;
-            auto id = add(entity, {11.f + i, 9.f}, Role::Bandit);
-            world.Find(id)->traits = {{75, 10, 85, 10, 90, 30, 20}};
+            Town(v).pollution = 0;
+            int named = 0;
+            for (auto id : world.people)
+            {
+                named += world.Find(id)->settlement == v;
+            }
+            const auto center = Villages()[v].center;
+            for (int i = named; i < 20; ++i)
+            {
+                auto entity = definitions.at("thomas_01");
+                entity.id = "arcana:" + Villages()[v].id + ":resident:" + std::to_string(i);
+                entity.name = "주민 " + std::to_string(i + 1);
+                Role role = i >= 18      ? Role::Merchant
+                            : i == 17    ? Role::Bandit
+                            : i % 7 == 0 ? Role::Healer
+                            : i % 5 == 0 ? Role::Guard
+                            : i % 4 == 0 ? Role::Merchant
+                                         : Role::Resident;
+                auto id = add(entity, {center.x + i % 5 - 2, center.y + i / 5 - 1}, role, v);
+                auto* p = world.Find(id);
+                p->courier = i >= 18;
+                p->work = world.Safe({center.x - 2 + i % 5, center.y - 3});
+                p->state.food = 1;
+                Town(v).food = std::max(0.0, Town(v).food - 1);
+                if (role == Role::Healer)
+                {
+                    p->state.medicine = 8;
+                }
+                if (role == Role::Bandit)
+                {
+                    p->state.hunger = 80;
+                    p->traits = {{75, 10, 85, 10, 90, 30, 20}};
+                }
+                if (p->courier)
+                {
+                    p->displayName = Villages()[v].name + L" 행상 " + std::to_wstring(i - 17);
+                    p->state.travelTown = v == 0 ? (i - 18) + 1 : 0;
+                    p->state.travelWait = 5.f + (i - 18) * 4;
+                }
+            }
+        }
+        for (int i = 1; i < 100; ++i)
+        {
+            auto e = definitions.at("beast_01");
+            e.id = "arcana:monster:" + std::to_string(i);
+            e.name = "흑아 멧돼지 " + std::to_string(i + 1);
+            add(e, monsterSpawns[i * monsterSpawns.size() / 100], Role::Resident, -1);
+        }
+        for (int i = 0; i < 28; ++i)
+        {
+            bp::native::Entity e;
+            e.id = "arcana:deer:" + std::to_string(i);
+            e.save = "demo";
+            e.species = "deer";
+            e.name = "사슴 " + std::to_string(i + 1);
+            e.kind = "animal";
+            e.profile = "herbivore";
+            e.region = e.homeRegion = "north_forest";
+            e.health = maximum.at("deer");
+            add(e, {-25.f + i % 7, 12.f + i / 7}, Role::Resident, -1);
         }
         Query traits(database,
                      "SELECT entity_id,trait,value FROM entity_traits ORDER BY entity_id,trait");
@@ -381,50 +390,31 @@ namespace Arcana
                 p->traits[slot->second] = static_cast<int>(traits.Number(2));
             }
         }
-        if (!content.territories.empty())
-        {
-            progress.disturbance = content.territories.front().disturbance;
-        }
         world.minutes = content.worldHours * 60;
-        // Opening relief uses the existing warehouse/treasury, never creates trade currency.
+        progress.lastEconomy = world.minutes * 60;
         const float relief = static_cast<float>(std::min(2.0, world.town.treasury));
         world.Player().state.coins += relief;
         world.town.treasury -= relief;
         for (auto id : world.people)
         {
             auto* p = world.Find(id);
-            if (p->settlement != 0)
+            if (p->settlement >= 0 && p->role == Role::Merchant)
             {
-                continue;
-            }
-            if (p->role == Role::Merchant)
-            {
-                float stock = static_cast<float>(std::min(2.0, world.town.food));
+                auto& town = Town(p->settlement);
+                float stock = static_cast<float>(std::min(2.0, town.food));
                 p->state.food += stock;
-                world.town.food -= stock;
-            }
-            if (p->role == Role::Resident && world.town.treasury >= 2)
-            {
-                p->state.coins += 2;
-                world.town.treasury -= 2;
+                town.food -= stock;
             }
         }
         world.RebuildIndex();
-        world.Log(L"아르카나 : ARCANA — 재가 된 집. 부모는 돌아오지 않았다.");
-        world.Log(L"[E] 불탄 집을 조사하라. 수첩과 은빛 문장이 남아 있다.");
+        world.Log(L"아르카나 : ARCANA — 다섯 마을과 숲길. 소식은 사람의 발로 전해진다.");
+        world.Log(L"[E] 불탄 집 조사. 중앙 벨하임에서 네 마을로 이어지는 도로를 이용하세요.");
     }
 
     Lena::Person* Module::Named(const std::string& id) const
     {
-        for (auto actor : world.people)
-        {
-            auto* person = world.Find(actor);
-            if (person && person->key == id)
-            {
-                return person;
-            }
-        }
-        return nullptr;
+        auto found = actorIds.find(id);
+        return found == actorIds.end() ? nullptr : world.Find(found->second);
     }
 
     bool Module::Near(RenderPoint point, float distance) const
@@ -488,6 +478,18 @@ namespace Arcana
                   progress.step < 3 ? nullptr : &world.Player(),
                   45);
         }
+        if (p.courier && !s.detained && !s.surrendered)
+        {
+            if (s.travelWait <= 0 && s.travelTown >= 0)
+            {
+                s.destination = world.Safe(Villages()[s.travelTown].center);
+                offer(Action::Travel, nullptr, 65);
+            }
+            else
+            {
+                offer(Action::Idle, nullptr, 45);
+            }
+        }
         bool emergency = false;
         bool leave = false;
         auto entity = definitions.at(p.key);
@@ -507,11 +509,11 @@ namespace Arcana
             bp::native::Territory area;
             area.owner = p.key;
             area.region = p.region;
-            area.disturbance = progress.disturbance;
+            area.disturbance = s.anger;
             leave = bp::native::shouldLeaveTerritory(entity, area, content.events);
             if (leave)
             {
-                p.state.destination = world.square;
+                p.state.destination = Villages()[Location(p.Position(), 1e9f)].center;
                 offer(Action::Travel, nullptr, 60);
             }
         }
@@ -566,6 +568,10 @@ namespace Arcana
             {
                 offer(Action::Hunt, other, s.hunger + 10 - distance);
             }
+            if (p.beast && other->role == Role::Player && distance < 4)
+            {
+                offer(Action::Attack, other, 110);
+            }
             if (p.species == Species::Deer && other->species == Species::Wolf && distance < 5)
             {
                 offer(Action::Flee, other, 150);
@@ -590,10 +596,12 @@ namespace Arcana
                     offer(other->state.food >= 1 ? Action::Steal : Action::Attack, other, 125);
                 }
             }
-            if (p.species == Species::Human && other->species == Species::Human && distance < 2 &&
-                !s.known.empty() && s.cooldown <= 0 && p.role != Role::Bandit)
+            bool differentKnowledge = s.known != other->state.known;
+            if (p.species == Species::Human && other->species == Species::Human &&
+                other->role != Role::Player && distance < (p.courier ? 8.f : 2.f) &&
+                differentKnowledge && s.cooldown <= 0 && p.role != Role::Bandit)
             {
-                offer(Action::Talk, other, 35);
+                offer(Action::Talk, other, (p.courier ? 85 : 35) - distance);
             }
         }
         if (s.detained || s.surrendered)
@@ -627,6 +635,7 @@ namespace Arcana
         Profiler::Scope scope("arcana.story_update");
         attackSeconds = std::max(0.f, attackSeconds - dt);
         UpdateProjectiles(dt);
+        UpdateExpansion(dt);
         fireSeconds = std::max(0.f, fireSeconds - dt);
         pulse -= dt;
         if (pulse > 0)
@@ -681,6 +690,10 @@ namespace Arcana
     void Module::Interact()
     {
         Profiler::Scope scope("arcana.interaction");
+        if (AbsorbRemnant())
+        {
+            return;
+        }
         if (Near(world.canal, 3))
         {
             if (progress.step == 0)
@@ -743,7 +756,8 @@ namespace Arcana
                 L"세르딘의 유품에서 브란에게 가는 편지를 찾았다. 죽은 동행자는 돌아오지 않는다.");
             return;
         }
-        if (Near({8, -7}, 2))
+        if (Near({world.lakeCenter.x - 6, world.lakeCenter.y}, 2) ||
+            (Location(world.Player().Position()) >= 0 && Near(DrinkingPoint(world.Player()), 2)))
         {
             world.Player().state.thirst = 20;
             world.Log(L"호숫가의 물을 마셨다.");
@@ -867,12 +881,13 @@ namespace Arcana
         for (auto id : world.people)
         {
             auto* p = world.Find(id);
-            if (!p || !Enemy(*p) || !world.Visible(player.Position(), p->Position()))
+            if (!p || !Enemy(*p))
             {
                 continue;
             }
             float distance = Lena::Distance(player.Position(), p->Position());
-            if (distance < nearest && distance > .000001f)
+            if (distance < nearest && distance > .000001f &&
+                world.Visible(player.Position(), p->Position()))
             {
                 nearest = distance;
                 direction = {(p->Position().x - player.Position().x) / distance,
@@ -884,6 +899,7 @@ namespace Arcana
         projectiles.push_back(orb.GetId());
         player.state.cooldown = .55f;
         player.state.facing = WorldGeometry::Project(direction).x >= 0 ? 1.f : -1.f;
+        player.visualDirection = direction;
         attackSeconds = .22f;
         Profiler::Count("arcana.orbs_launched");
     }
@@ -931,7 +947,7 @@ namespace Arcana
                 }
                 if (hit)
                 {
-                    world.Damage(world.Player(), *hit, 24);
+                    world.Damage(world.Player(), *hit, BasicAttackDamage);
                     Profiler::Count("arcana.orb_hits");
                     remove = true;
                 }
@@ -996,6 +1012,12 @@ namespace Arcana
         {
             victim.state.deathMinute = world.minutes;
             scheduler->clear(victim.key);
+            int local = Location(victim.Position());
+            if (local >= 0)
+            {
+                auto& town = Town(local);
+                town.morale = std::max(0.0, town.morale - 2);
+            }
         }
     }
 
@@ -1004,16 +1026,20 @@ namespace Arcana
         return progress;
     }
 
-    void Module::Enrich(WorldMonitor::Snapshot& snapshot) const
+    void Module::Enrich(WorldMonitor::Snapshot& snapshot, bool statistics) const
     {
-        snapshot.metrics["arcana.quest_step"] = progress.step;
-        snapshot.metrics["arcana.combustion_known"] = progress.combustion ? 1 : 0;
-        snapshot.metrics["arcana.territory_disturbance"] = progress.disturbance;
-        snapshot.metrics["arcana.knight_dispatched"] = progress.dispatched ? 1 : 0;
-        snapshot.metrics["arcana.loaded_behavior_nodes"] =
-            static_cast<double>(content.nodes.size());
-        snapshot.settlements[0].id = "belheim";
-        snapshot.settlements[0].name = L"벨하임";
+        if (statistics)
+        {
+            snapshot.metrics["arcana.quest_step"] = progress.step;
+            snapshot.metrics["arcana.combustion_known"] = progress.combustion ? 1 : 0;
+            snapshot.metrics["arcana.territory_disturbance"] = progress.disturbance;
+            snapshot.metrics["arcana.knight_dispatched"] = progress.dispatched ? 1 : 0;
+            snapshot.metrics["arcana.loaded_behavior_nodes"] =
+                static_cast<double>(content.nodes.size());
+            FillVillages(snapshot);
+            snapshot.metrics["arcana.village_count"] = 5;
+            snapshot.metrics["arcana.monster_capacity"] = 100;
+        }
         for (auto& entry : snapshot.entities)
         {
             auto* p = Named(entry.id);
@@ -1023,8 +1049,18 @@ namespace Arcana
                 if (p->species != Lena::Species::Human)
                 {
                     entry.role = p->speciesId;
+                    entry.kind = p->beast ? "monster" : "wildlife";
                 }
-                entry.settlementId = p->settlement == 0 ? "belheim" : "";
+                entry.settlementId = p->settlement >= 0 ? Villages()[p->settlement].id : "";
+                entry.metrics["physical_village"] = Location(p->Position());
+                entry.metrics["courier"] = p->courier ? 1 : 0;
+                entry.metrics["travel_destination"] = p->state.travelTown;
+                entry.metrics["known_rumors"] = static_cast<double>(p->state.known.size());
+                entry.metrics["generation"] = p->state.generation;
+                entry.metrics["respawn_remaining_seconds"] =
+                    p->beast && p->state.dead
+                        ? std::max(0.0, 5 - (world.minutes - p->state.deathMinute) * 60)
+                        : 0;
                 entry.metrics["mana_current"] = p->state.manaCurrent;
                 entry.metrics["mana_max"] = p->state.manaMax;
                 entry.metrics["is_beast"] = p->beast ? 1 : 0;
@@ -1035,9 +1071,23 @@ namespace Arcana
 
     void Module::Write(std::ostream& out) const
     {
-        out << "ARCANA_PROGRESS_1 " << progress.step << ' ' << progress.combustion << ' '
+        out << "ARCANA_PROGRESS_2 " << progress.step << ' ' << progress.combustion << ' '
             << progress.dispatched << ' ' << progress.boarKills << ' ' << progress.disturbance
-            << ' ' << progress.dispatchPosition.x << ' ' << progress.dispatchPosition.y << '\n';
+            << ' ' << progress.dispatchPosition.x << ' ' << progress.dispatchPosition.y << ' '
+            << progress.respawnSequence << ' ' << progress.lastEconomy << '\n';
+        for (int v = 0; v < 5; ++v)
+        {
+            const auto& town = Town(v);
+            out << town.food << ' ' << town.water << ' ' << town.treasury << ' ' << town.morale
+                << ' ' << town.security << ' ' << town.pollution << ' ' << town.plants << ' '
+                << town.production << ' ' << town.consumption << '\n';
+        }
+        out << progress.remnants.size() << '\n';
+        for (const auto& remnant : progress.remnants)
+        {
+            out << remnant.slot << ' ' << remnant.generation << ' ' << remnant.position.x << ' '
+                << remnant.position.y << ' ' << remnant.minute << ' ' << remnant.mana << '\n';
+        }
         const auto& actions = scheduler->actions();
         out << actions.size() << '\n';
         for (const auto& pair : actions)
@@ -1054,12 +1104,65 @@ namespace Arcana
         std::string tag;
         size_t count = 0;
         in >> tag >> result.step >> result.combustion >> result.dispatched >> result.boarKills >>
-            result.disturbance >> result.dispatchPosition.x >> result.dispatchPosition.y >> count;
-        if (!in || tag != "ARCANA_PROGRESS_1" || result.step < 0 || result.step > 7 ||
-            result.combustion != (result.step >= 6) || result.boarKills > 3 ||
+            result.disturbance >> result.dispatchPosition.x >> result.dispatchPosition.y >>
+            result.respawnSequence >> result.lastEconomy;
+        if (!in || tag != "ARCANA_PROGRESS_2" || result.step < 0 || result.step > 7 ||
+            result.combustion != (result.step >= 6) || result.boarKills > 1000000 ||
             !std::isfinite(result.disturbance) || result.disturbance < 0 ||
             result.disturbance > 100 || !world.Walkable(result.dispatchPosition) ||
-            count > world.people.size())
+            !std::isfinite(result.lastEconomy) || result.lastEconomy < 0 ||
+            result.lastEconomy > minutes * 60)
+        {
+            return false;
+        }
+        for (auto& town : result.towns)
+        {
+            in >> town.food >> town.water >> town.treasury >> town.morale >> town.security >>
+                town.pollution >> town.plants >> town.production >> town.consumption;
+            for (double value : {town.food,
+                                 town.water,
+                                 town.treasury,
+                                 town.morale,
+                                 town.security,
+                                 town.pollution,
+                                 town.plants,
+                                 town.production,
+                                 town.consumption})
+            {
+                if (!in || !std::isfinite(value) || value < 0 || value >= 1e9)
+                {
+                    return false;
+                }
+            }
+            if (town.morale > 100 || town.security > 100 || town.pollution > 100)
+            {
+                return false;
+            }
+        }
+        in >> count;
+        if (!in || count > 1000)
+        {
+            return false;
+        }
+        std::set<std::pair<Actor::Id, unsigned>> residueIds;
+        for (size_t i = 0; i < count; ++i)
+        {
+            Remnant remnant;
+            in >> remnant.slot >> remnant.generation >> remnant.position.x >> remnant.position.y >>
+                remnant.minute >> remnant.mana;
+            auto* p = world.Find(remnant.slot);
+            if (!in || !p || !p->beast || !world.Walkable(remnant.position) ||
+                !std::isfinite(remnant.minute) || remnant.minute < 0 || remnant.minute > minutes ||
+                !std::isfinite(remnant.mana) || remnant.mana < 0 || remnant.mana > 1e9 ||
+                remnant.generation > 1000000 ||
+                !residueIds.insert({remnant.slot, remnant.generation}).second)
+            {
+                return false;
+            }
+            result.remnants.push_back(remnant);
+        }
+        in >> count;
+        if (!in || count > world.people.size())
         {
             return false;
         }
@@ -1086,7 +1189,19 @@ namespace Arcana
     void Module::Restore(Progress value)
     {
         ClearProjectiles();
+        for (const auto& remnant : progress.remnants)
+        {
+            if (auto* actor = world.scene.Find(remnant.visual))
+            {
+                world.scene.Destroy(*actor);
+            }
+        }
         progress = std::move(value);
+        world.town = progress.towns[0];
+        for (auto& remnant : progress.remnants)
+        {
+            ShowRemnant(remnant);
+        }
         auto restored = content;
         restored.activeActions = progress.actions;
         scheduler = std::make_unique<bp::native::Scheduler>(restored);

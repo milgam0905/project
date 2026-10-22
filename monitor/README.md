@@ -28,6 +28,8 @@ SimpleGame.exe --no-monitor
 
 ARCANA 개체 JSON에는 `mana_current`, `mana_max`, `is_beast`, `mana_absorbed`가 포함됩니다. 월드 지표의 `arcana.quest_step`, `arcana.territory_disturbance`, `arcana.knight_dispatched`로 진행과 사건을 확인할 수 있습니다. 원격 도시는 현재 시작 맵의 실제 배치 개체 수에 포함하지 않습니다.
 
+확장 월드는 다섯 마을(`belheim`, `arsen`, `kardin`, `elysia_outpost`, `north_refuge`)과 마을별 초기 NPC 20명, 마을 사이 몹 정원 100을 보고합니다. 마을 카드에 평온·불안·애도·적대와 현장 인원·알려진 소문 수가 표시됩니다. 분위기는 현장 NPC의 감정을 집계하며, 소속 인원과 현장 인원은 구별합니다. `courier`, `travel_destination`, `known_rumors`, `generation`, `respawn_remaining_seconds`로 행상·소문·재생성을 확인할 수 있습니다. 상세 수식과 세계 배치는 `docs/ARCANA_INTEGRATION.md`를 참고합니다.
+
 ## 표시 내용과 의미
 
 - 월드/실행 인스턴스 선택, 수신 상태, 일시정지, 월드 시간.
@@ -90,7 +92,9 @@ ID와 지표 키는 1~64자 ASCII 영숫자·밑줄·점·하이픈, 표시 문�
 
 ## 구현과 성능
 
-`GameMode::CaptureMonitor()`는 게임 스레드에서 SceneGraph의 Actor ID를 확인하고 데이터만 복사합니다. `WorldMonitor`는 JSON을 직렬화한 뒤 별도 스레드가 WinHTTP로 전송합니다. 대기 메시지는 최신 1개로 제한합니다. 수신기 장애 시 2초 재시도 간격과 네트워크 단계별 250ms timeout을 사용합니다. 종료 시 전송 스레드의 종료를 기다립니다. 네트워크 대기는 렌더링 스레드에서 하지 않지만 캡처·직렬화 CPU 비용은 존재하므로 프로파일링 값으로 확인하세요.
+ARCANA/레나는 `GameMode::PrepareMonitor()`에서 호스트 타이머당 최대 16개체의 DTO를 모읍니다. SceneGraph의 Actor ID를 게임 스레드에서 확인하며, 목록이 완성되면 현재 월드/마을 통계를 붙여 `CaptureMonitor()`가 이동 반환합니다. 부분 목록은 보내지 않습니다. 개체 상태는 수집 기간 여러 프레임에 걸친 근사 스냅샷이며, 마을 통계와 모든 개체가 정확히 같은 순간의 원자적 상태는 아닙니다. 저장/불러오기·새 게임 시 수집 버퍼를 초기화합니다.
+
+`WorldMonitor`의 별도 스레드가 DTO를 JSON으로 직렬화하고 WinHTTP로 전송합니다. 직렬화·네트워크 대기는 게임 스레드에서 하지 않습니다. 대기 메시지는 최신 1개로 제한하며 기본 전송 간격은 약 1초입니다. 수신기 장애 시 2초 재시도 간격과 네트워크 단계별 250ms timeout을 사용합니다. 종료 시 전송 스레드의 종료를 기다립니다. 메인 스레드 수집 비용은 `monitor.capture_slice`/`monitor.capture`, 워커 직렬화 경과 시간은 `monitor.last_serialize_wall_ms`로 구분합니다.
 
 수신 주소는 127.0.0.1:8765로 고정, 프록시·리다이렉트 없음. HTTP 서버는 loopback에만 바인딩하고 Host/Origin을 검증합니다. CORS 허용 없음, 외부 스크립트 없음, 문자열은 textContent로 출력합니다. **같은 PC의 프로세스는 신뢰하는 개발용 도구**이며 인증된 운영 서비스가 아닙니다. 포트 포워딩이나 0.0.0.0 바인딩으로 공개하지 마세요.
 
@@ -109,4 +113,4 @@ python -m unittest discover -s monitor/tests -v
 5. 게임 재시작, 씬 재생성(R/N), 수신기 재시작 후 ID/epoch와 데이터 교체 확인.
 6. 게임 종료 5초 후 오래된 정보 표시, 수신기 종료 시 연결 끊김 표시 확인.
 7. 동일 sequence 재전송 409, malformed JSON 400, 잘못된 Origin 403 확인.
-8. `--no-monitor`와 기본 실행의 `monitor.capture`, `monitor.serialize`, FPS 로그를 비교해 관측 비용 확인.
+8. `--no-monitor`와 기본 실행의 `monitor.capture_slice`, `monitor.capture`, `monitor.enqueue`, FPS 로그를 비교해 관측 비용 확인. 워커의 `monitor.last_serialize_wall_ms`는 별도로 확인.

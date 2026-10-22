@@ -1,0 +1,4334 @@
+{
+  "glb": [
+    {
+      "file": "animals/boar.glb",
+      "triangles": 1651,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "BOAR_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Run",
+          "duration_seconds": 0.6,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 345972,
+      "status": "pass"
+    },
+    {
+      "file": "animals/boar_parts/boar_body_base.glb",
+      "triangles": 216,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "BOAR_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Run",
+          "duration_seconds": 0.6,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 164736,
+      "status": "pass"
+    },
+    {
+      "file": "animals/boar_parts/boar_body_dark.glb",
+      "triangles": 216,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "BOAR_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Run",
+          "duration_seconds": 0.6,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 164780,
+      "status": "pass"
+    },
+    {
+      "file": "animals/boar_parts/boar_head_base.glb",
+      "triangles": 494,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "BOAR_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Run",
+          "duration_seconds": 0.6,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 206772,
+      "status": "pass"
+    },
+    {
+      "file": "animals/boar_parts/boar_legs_base.glb",
+      "triangles": 824,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "BOAR_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Run",
+          "duration_seconds": 0.6,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 236804,
+      "status": "pass"
+    },
+    {
+      "file": "animals/boar_parts/boar_tail_base.glb",
+      "triangles": 44,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "BOAR_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Run",
+          "duration_seconds": 0.6,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 145120,
+      "status": "pass"
+    },
+    {
+      "file": "animals/boar_parts/boar_tusks_mane_base.glb",
+      "triangles": 73,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "BOAR_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Run",
+          "duration_seconds": 0.6,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "BOAR_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 150316,
+      "status": "pass"
+    },
+    {
+      "file": "animals/deer.glb",
+      "triangles": 1830,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "DEER_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Run",
+          "duration_seconds": 0.733333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 365820,
+      "status": "pass"
+    },
+    {
+      "file": "animals/deer_parts/deer_antlers_stag.glb",
+      "triangles": 192,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "DEER_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Run",
+          "duration_seconds": 0.733333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 161348,
+      "status": "pass"
+    },
+    {
+      "file": "animals/deer_parts/deer_body_base.glb",
+      "triangles": 276,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "DEER_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Run",
+          "duration_seconds": 0.733333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 174032,
+      "status": "pass"
+    },
+    {
+      "file": "animals/deer_parts/deer_body_dark.glb",
+      "triangles": 276,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "DEER_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Run",
+          "duration_seconds": 0.733333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 174080,
+      "status": "pass"
+    },
+    {
+      "file": "animals/deer_parts/deer_head_base.glb",
+      "triangles": 494,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "DEER_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Run",
+          "duration_seconds": 0.733333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 206868,
+      "status": "pass"
+    },
+    {
+      "file": "animals/deer_parts/deer_legs_base.glb",
+      "triangles": 824,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "DEER_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Run",
+          "duration_seconds": 0.733333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 237048,
+      "status": "pass"
+    },
+    {
+      "file": "animals/deer_parts/deer_tail_base.glb",
+      "triangles": 44,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "DEER_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Run",
+          "duration_seconds": 0.733333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "DEER_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 145372,
+      "status": "pass"
+    },
+    {
+      "file": "animals/goat.glb",
+      "triangles": 1762,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "GOAT_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Run",
+          "duration_seconds": 0.733333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 359780,
+      "status": "pass"
+    },
+    {
+      "file": "animals/goat_parts/goat_body_base.glb",
+      "triangles": 276,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "GOAT_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Run",
+          "duration_seconds": 0.733333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 174364,
+      "status": "pass"
+    },
+    {
+      "file": "animals/goat_parts/goat_body_dark.glb",
+      "triangles": 276,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "GOAT_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Run",
+          "duration_seconds": 0.733333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 174412,
+      "status": "pass"
+    },
+    {
+      "file": "animals/goat_parts/goat_head_base.glb",
+      "triangles": 494,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "GOAT_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Run",
+          "duration_seconds": 0.733333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 207200,
+      "status": "pass"
+    },
+    {
+      "file": "animals/goat_parts/goat_horns_base.glb",
+      "triangles": 124,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "GOAT_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Run",
+          "duration_seconds": 0.733333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 155584,
+      "status": "pass"
+    },
+    {
+      "file": "animals/goat_parts/goat_legs_base.glb",
+      "triangles": 824,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "GOAT_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Run",
+          "duration_seconds": 0.733333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 237388,
+      "status": "pass"
+    },
+    {
+      "file": "animals/goat_parts/goat_tail_base.glb",
+      "triangles": 44,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "GOAT_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Run",
+          "duration_seconds": 0.733333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "GOAT_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 145696,
+      "status": "pass"
+    },
+    {
+      "file": "animals/wolf.glb",
+      "triangles": 1914,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "WOLF_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Run",
+          "duration_seconds": 0.6,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 382456,
+      "status": "pass"
+    },
+    {
+      "file": "animals/wolf_parts/wolf_body_base.glb",
+      "triangles": 276,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "WOLF_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Run",
+          "duration_seconds": 0.6,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 171884,
+      "status": "pass"
+    },
+    {
+      "file": "animals/wolf_parts/wolf_body_dark.glb",
+      "triangles": 276,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "WOLF_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Run",
+          "duration_seconds": 0.6,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 171876,
+      "status": "pass"
+    },
+    {
+      "file": "animals/wolf_parts/wolf_head_base.glb",
+      "triangles": 494,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "WOLF_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Run",
+          "duration_seconds": 0.6,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 204656,
+      "status": "pass"
+    },
+    {
+      "file": "animals/wolf_parts/wolf_legs_base.glb",
+      "triangles": 1096,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "WOLF_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Run",
+          "duration_seconds": 0.6,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 273568,
+      "status": "pass"
+    },
+    {
+      "file": "animals/wolf_parts/wolf_ruff_base.glb",
+      "triangles": 4,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "WOLF_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Run",
+          "duration_seconds": 0.6,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 139416,
+      "status": "pass"
+    },
+    {
+      "file": "animals/wolf_parts/wolf_tail_base.glb",
+      "triangles": 44,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "WOLF_Attack",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Idle",
+          "duration_seconds": 2.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Jump",
+          "duration_seconds": 1.4,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Reference",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Run",
+          "duration_seconds": 0.6,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_L90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Turn_R90",
+          "duration_seconds": 1.0,
+          "channels": 69
+        },
+        {
+          "name": "WOLF_Walk",
+          "duration_seconds": 1.2,
+          "channels": 69
+        }
+      ],
+      "size_bytes": 143224,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_belt_pouch.glb",
+      "triangles": 176,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 176332,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_boots_guard.glb",
+      "triangles": 424,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 205908,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_boots_travel.glb",
+      "triangles": 336,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 194796,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_boots_wrapped.glb",
+      "triangles": 560,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 217392,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_face_soft.glb",
+      "triangles": 328,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 200812,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_face_soft_skin_dark.glb",
+      "triangles": 328,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 200820,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_face_soft_skin_pale.glb",
+      "triangles": 328,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 200832,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_face_stern.glb",
+      "triangles": 360,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 204132,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_face_stern_skin_dark.glb",
+      "triangles": 360,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 204144,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_face_stern_skin_pale.glb",
+      "triangles": 360,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 204156,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_face_weathered.glb",
+      "triangles": 340,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 202140,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_face_weathered_skin_dark.glb",
+      "triangles": 340,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 202152,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_face_weathered_skin_pale.glb",
+      "triangles": 340,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 202164,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_hair_cropped.glb",
+      "triangles": 58,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 160288,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_hair_grey.glb",
+      "triangles": 58,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 160272,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_hair_hood.glb",
+      "triangles": 324,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 195620,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_hair_swept.glb",
+      "triangles": 58,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 160288,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_hands_skin.glb",
+      "triangles": 184,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 175424,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_hands_skin_dark.glb",
+      "triangles": 184,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 175428,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_hands_skin_pale.glb",
+      "triangles": 184,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 175440,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_head_skin.glb",
+      "triangles": 260,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 183784,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_head_skin_dark.glb",
+      "triangles": 260,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 183788,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_head_skin_pale.glb",
+      "triangles": 260,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 183800,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_legs_leather.glb",
+      "triangles": 164,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 170740,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_legs_wool.glb",
+      "triangles": 164,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 170728,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_neck_skin.glb",
+      "triangles": 28,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 156932,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_neck_skin_dark.glb",
+      "triangles": 28,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 156936,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_neck_skin_pale.glb",
+      "triangles": 28,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 156948,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_outer_guard_armor.glb",
+      "triangles": 184,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 177680,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_outer_smith_apron.glb",
+      "triangles": 46,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 160528,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_torso_guard.glb",
+      "triangles": 376,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 196664,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_torso_smith.glb",
+      "triangles": 376,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 196648,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_torso_traveler.glb",
+      "triangles": 376,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 196664,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_torso_villager.glb",
+      "triangles": 376,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 195432,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_weapon_hammer.glb",
+      "triangles": 88,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 165840,
+      "status": "pass"
+    },
+    {
+      "file": "characters/parts/HUM_weapon_sword.glb",
+      "triangles": 94,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 167976,
+      "status": "pass"
+    },
+    {
+      "file": "characters/presets/blacksmith.glb",
+      "triangles": 2076,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 416368,
+      "status": "pass"
+    },
+    {
+      "file": "characters/presets/guard.glb",
+      "triangles": 2308,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 445756,
+      "status": "pass"
+    },
+    {
+      "file": "characters/presets/protagonist.glb",
+      "triangles": 1922,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 394708,
+      "status": "pass"
+    },
+    {
+      "file": "characters/presets/villager.glb",
+      "triangles": 2134,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "HUM_Attack",
+          "duration_seconds": 1.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Idle",
+          "duration_seconds": 2.0,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Jump",
+          "duration_seconds": 1.4,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Reference_A",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Run",
+          "duration_seconds": 0.666667,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_Base",
+          "duration_seconds": 0.033333,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_L90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Turn_R90",
+          "duration_seconds": 0.8,
+          "channels": 75
+        },
+        {
+          "name": "HUM_Walk",
+          "duration_seconds": 1.0,
+          "channels": 75
+        }
+      ],
+      "size_bytes": 414252,
+      "status": "pass"
+    },
+    {
+      "file": "environment/anvil.glb",
+      "triangles": 160,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 14204,
+      "status": "pass"
+    },
+    {
+      "file": "environment/axe.glb",
+      "triangles": 56,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 774920,
+      "status": "pass"
+    },
+    {
+      "file": "environment/barrel.glb",
+      "triangles": 292,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 789628,
+      "status": "pass"
+    },
+    {
+      "file": "environment/beam_2m.glb",
+      "triangles": 44,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 773160,
+      "status": "pass"
+    },
+    {
+      "file": "environment/bed.glb",
+      "triangles": 240,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 789920,
+      "status": "pass"
+    },
+    {
+      "file": "environment/bench.glb",
+      "triangles": 68,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 775772,
+      "status": "pass"
+    },
+    {
+      "file": "environment/bowl.glb",
+      "triangles": 92,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 6684,
+      "status": "pass"
+    },
+    {
+      "file": "environment/bucket.glb",
+      "triangles": 196,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 782232,
+      "status": "pass"
+    },
+    {
+      "file": "environment/chair.glb",
+      "triangles": 128,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 779988,
+      "status": "pass"
+    },
+    {
+      "file": "environment/chest_rigged.glb",
+      "triangles": 164,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "CHEST_Close",
+          "duration_seconds": 1.0,
+          "channels": 6
+        },
+        {
+          "name": "CHEST_Closed",
+          "duration_seconds": 0.033333,
+          "channels": 6
+        },
+        {
+          "name": "CHEST_Hold_Open",
+          "duration_seconds": 0.033333,
+          "channels": 6
+        },
+        {
+          "name": "CHEST_Open",
+          "duration_seconds": 1.0,
+          "channels": 6
+        }
+      ],
+      "size_bytes": 30032,
+      "status": "pass"
+    },
+    {
+      "file": "environment/chimney_1p6m.glb",
+      "triangles": 616,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 933688,
+      "status": "pass"
+    },
+    {
+      "file": "environment/clay_pot.glb",
+      "triangles": 212,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 15080,
+      "status": "pass"
+    },
+    {
+      "file": "environment/crate.glb",
+      "triangles": 180,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 783384,
+      "status": "pass"
+    },
+    {
+      "file": "environment/crate_open.glb",
+      "triangles": 156,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 781708,
+      "status": "pass"
+    },
+    {
+      "file": "environment/door_rigged.glb",
+      "triangles": 480,
+      "skins": 1,
+      "clips": [
+        {
+          "name": "DOOR_Close",
+          "duration_seconds": 1.0,
+          "channels": 6
+        },
+        {
+          "name": "DOOR_Closed",
+          "duration_seconds": 0.033333,
+          "channels": 6
+        },
+        {
+          "name": "DOOR_Hold_Open",
+          "duration_seconds": 0.033333,
+          "channels": 6
+        },
+        {
+          "name": "DOOR_Open",
+          "duration_seconds": 1.0,
+          "channels": 6
+        }
+      ],
+      "size_bytes": 68732,
+      "status": "pass"
+    },
+    {
+      "file": "environment/fallen_log.glb",
+      "triangles": 84,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 730668,
+      "status": "pass"
+    },
+    {
+      "file": "environment/fence_2m.glb",
+      "triangles": 124,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 779036,
+      "status": "pass"
+    },
+    {
+      "file": "environment/fern.glb",
+      "triangles": 304,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 25336,
+      "status": "pass"
+    },
+    {
+      "file": "environment/firewood_stack.glb",
+      "triangles": 120,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 777480,
+      "status": "pass"
+    },
+    {
+      "file": "environment/floor_wood_2x2.glb",
+      "triangles": 352,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 797396,
+      "status": "pass"
+    },
+    {
+      "file": "environment/foundation_2x2.glb",
+      "triangles": 44,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 889280,
+      "status": "pass"
+    },
+    {
+      "file": "environment/gable_4m.glb",
+      "triangles": 44,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 1662452,
+      "status": "pass"
+    },
+    {
+      "file": "environment/grass_clump_01.glb",
+      "triangles": 18,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 940916,
+      "status": "pass"
+    },
+    {
+      "file": "environment/grass_clump_02.glb",
+      "triangles": 26,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 941736,
+      "status": "pass"
+    },
+    {
+      "file": "environment/grass_clump_03.glb",
+      "triangles": 34,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 942548,
+      "status": "pass"
+    },
+    {
+      "file": "environment/ground_grass.glb",
+      "triangles": 128,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 951232,
+      "status": "pass"
+    },
+    {
+      "file": "environment/ground_path.glb",
+      "triangles": 524,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 1846652,
+      "status": "pass"
+    },
+    {
+      "file": "environment/ground_soil.glb",
+      "triangles": 128,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 929252,
+      "status": "pass"
+    },
+    {
+      "file": "environment/ground_stone.glb",
+      "triangles": 128,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 899024,
+      "status": "pass"
+    },
+    {
+      "file": "environment/hammer.glb",
+      "triangles": 88,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 777036,
+      "status": "pass"
+    },
+    {
+      "file": "environment/lantern.glb",
+      "triangles": 148,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 13360,
+      "status": "pass"
+    },
+    {
+      "file": "environment/mushrooms.glb",
+      "triangles": 204,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 17860,
+      "status": "pass"
+    },
+    {
+      "file": "environment/oak_mature.glb",
+      "triangles": 436,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 1650984,
+      "status": "pass"
+    },
+    {
+      "file": "environment/oak_young.glb",
+      "triangles": 436,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 1650988,
+      "status": "pass"
+    },
+    {
+      "file": "environment/pine_tall.glb",
+      "triangles": 176,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 1633652,
+      "status": "pass"
+    },
+    {
+      "file": "environment/pitchfork.glb",
+      "triangles": 128,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 779512,
+      "status": "pass"
+    },
+    {
+      "file": "environment/post_2p5m.glb",
+      "triangles": 44,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 773160,
+      "status": "pass"
+    },
+    {
+      "file": "environment/prefab_cottage.glb",
+      "triangles": 3820,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 3659528,
+      "status": "pass"
+    },
+    {
+      "file": "environment/reeds.glb",
+      "triangles": 468,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 1743152,
+      "status": "pass"
+    },
+    {
+      "file": "environment/ridge_2m.glb",
+      "triangles": 20,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 810700,
+      "status": "pass"
+    },
+    {
+      "file": "environment/rock_01.glb",
+      "triangles": 20,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 888060,
+      "status": "pass"
+    },
+    {
+      "file": "environment/rock_02.glb",
+      "triangles": 20,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 888056,
+      "status": "pass"
+    },
+    {
+      "file": "environment/rock_03.glb",
+      "triangles": 20,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 888056,
+      "status": "pass"
+    },
+    {
+      "file": "environment/roof_shingle_2m.glb",
+      "triangles": 684,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 49532,
+      "status": "pass"
+    },
+    {
+      "file": "environment/roof_thatch_2m.glb",
+      "triangles": 684,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 857504,
+      "status": "pass"
+    },
+    {
+      "file": "environment/sack.glb",
+      "triangles": 156,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 13492,
+      "status": "pass"
+    },
+    {
+      "file": "environment/shelf.glb",
+      "triangles": 72,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 775808,
+      "status": "pass"
+    },
+    {
+      "file": "environment/shovel.glb",
+      "triangles": 68,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 775808,
+      "status": "pass"
+    },
+    {
+      "file": "environment/shrub.glb",
+      "triangles": 80,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 901556,
+      "status": "pass"
+    },
+    {
+      "file": "environment/shutter_1m.glb",
+      "triangles": 48,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 773896,
+      "status": "pass"
+    },
+    {
+      "file": "environment/spruce_young.glb",
+      "triangles": 154,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 1631416,
+      "status": "pass"
+    },
+    {
+      "file": "environment/stairs_1m.glb",
+      "triangles": 88,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 892656,
+      "status": "pass"
+    },
+    {
+      "file": "environment/stool.glb",
+      "triangles": 80,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 776620,
+      "status": "pass"
+    },
+    {
+      "file": "environment/stump.glb",
+      "triangles": 144,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 734484,
+      "status": "pass"
+    },
+    {
+      "file": "environment/table.glb",
+      "triangles": 408,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 801644,
+      "status": "pass"
+    },
+    {
+      "file": "environment/tree_dead.glb",
+      "triangles": 296,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 743876,
+      "status": "pass"
+    },
+    {
+      "file": "environment/wall_door_2m.glb",
+      "triangles": 120,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 1667668,
+      "status": "pass"
+    },
+    {
+      "file": "environment/wall_solid_2m.glb",
+      "triangles": 72,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 1664288,
+      "status": "pass"
+    },
+    {
+      "file": "environment/wall_window_2m.glb",
+      "triangles": 156,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 1670176,
+      "status": "pass"
+    },
+    {
+      "file": "environment/well.glb",
+      "triangles": 140,
+      "skins": 0,
+      "clips": [],
+      "size_bytes": 1665412,
+      "status": "pass"
+    }
+  ],
+  "blend": [
+    {
+      "file": "animals/boar.blend",
+      "status": "pass",
+      "rigs": [
+        {
+          "name": "ARC_Boar_v1",
+          "bones": 23,
+          "meshes": 6,
+          "loop_matrix_error": {
+            "BOAR_Idle": 9.797174324372975e-18,
+            "BOAR_Run": 0.0,
+            "BOAR_Walk": 0.0
+          },
+          "max_locomotion_joint_gap_m": 1.3175525497314689e-06,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "animals/deer.blend",
+      "status": "pass",
+      "rigs": [
+        {
+          "name": "ARC_Deer_v1",
+          "bones": 23,
+          "meshes": 6,
+          "loop_matrix_error": {
+            "DEER_Idle": 9.797174324372975e-18,
+            "DEER_Run": 0.0,
+            "DEER_Walk": 0.0
+          },
+          "max_locomotion_joint_gap_m": 2.177609832540937e-06,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "animals/goat.blend",
+      "status": "pass",
+      "rigs": [
+        {
+          "name": "ARC_Goat_v1",
+          "bones": 23,
+          "meshes": 6,
+          "loop_matrix_error": {
+            "GOAT_Idle": 9.797174324372975e-18,
+            "GOAT_Run": 0.0,
+            "GOAT_Walk": 0.0
+          },
+          "max_locomotion_joint_gap_m": 1.545775531439886e-06,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "animals/wolf.blend",
+      "status": "pass",
+      "rigs": [
+        {
+          "name": "ARC_Wolf_v1",
+          "bones": 23,
+          "meshes": 6,
+          "loop_matrix_error": {
+            "WOLF_Idle": 9.797174324372975e-18,
+            "WOLF_Run": 0.0,
+            "WOLF_Walk": 0.0
+          },
+          "max_locomotion_joint_gap_m": 1.4256915211516608e-06,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "characters/human_modular.blend",
+      "status": "pass",
+      "rigs": [
+        {
+          "name": "ARC_Human_v1",
+          "bones": 25,
+          "meshes": 36,
+          "loop_matrix_error": {
+            "HUM_Idle": 4.408728321890747e-18,
+            "HUM_Run": 1.102182101152202e-17,
+            "HUM_Walk": 1.102182101152202e-17
+          },
+          "max_locomotion_joint_gap_m": 7.18082922639965e-07,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "environment/chest_rigged.blend",
+      "status": "pass",
+      "rigs": [
+        {
+          "name": "ARC_Chest_v1",
+          "bones": 2,
+          "meshes": 2,
+          "loop_matrix_error": {},
+          "max_locomotion_joint_gap_m": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "environment/cottage_assembled.blend",
+      "status": "pass",
+      "rigs": []
+    },
+    {
+      "file": "environment/door_rigged.blend",
+      "status": "pass",
+      "rigs": [
+        {
+          "name": "ARC_Door_v1",
+          "bones": 2,
+          "meshes": 1,
+          "loop_matrix_error": {},
+          "max_locomotion_joint_gap_m": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "environment/environment_library.blend",
+      "status": "pass",
+      "rigs": []
+    },
+    {
+      "file": "materials/arcana_pbr_materials.blend",
+      "status": "pass",
+      "rigs": []
+    }
+  ],
+  "passed": true
+}

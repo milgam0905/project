@@ -83,6 +83,10 @@ namespace Lena
         float manaCurrent = 0, manaMax = 0;
         double deathMinute = 0;
         bool playerCredit = false, absorbed = false;
+        unsigned generation = 0;
+        int travelTown = -1;
+        float travelWait = 0;
+        RenderPoint habitat{0, 0};
     };
 
     class Person : public Actor
@@ -100,9 +104,15 @@ namespace Lena
         std::vector<RenderPoint> path;
         size_t pathIndex = 0;
         float routeTimer = 0;
+        float sightTimer = 0;
+        bool goalVisible = false;
+        RenderPoint sightGoal{0, 0};
+        RenderPoint visualDirection{0, 1};
+        float motionSeconds = 0;
         float maxHealth = 100;
         bool beast = false;
         std::string profile, speciesId, region;
+        bool courier = false;
     };
 
     struct Fact
@@ -112,6 +122,7 @@ namespace Lena
         double minute = 0;
         bool death = false, intentional = false, crime = false, reported = false;
         RenderPoint position{0, 0};
+        unsigned actorGeneration = 0, victimGeneration = 0;
     };
 
     struct Town
@@ -125,6 +136,9 @@ namespace Lena
       public:
         static constexpr float Extent = 26;
         static constexpr int Side = 104;
+        float extent = Extent;
+        RenderPoint lakeCenter{14, -8};
+        int side = Side, bucketSide = 9;
         SceneGraph scene;
         std::vector<Actor::Id> people;
         std::vector<RenderPoint> houses, trees;
@@ -158,18 +172,28 @@ namespace Lena
         void Interact();
         void Choose(int choice);
         void Log(const std::wstring& text);
-        WorldMonitor::Snapshot Capture(bool paused) const;
+        WorldMonitor::Snapshot Capture(bool paused,
+                                       size_t begin = 0,
+                                       size_t count = static_cast<size_t>(-1),
+                                       bool statistics = true) const;
         bool Save(const std::wstring& file) const;
         bool Load(const std::wstring& file);
         int Population(Species species, bool aliveOnly = true) const;
 
       private:
         friend class Arcana::Module;
-        std::array<unsigned char, Side * Side> walk{};
-        std::array<std::vector<Actor::Id>, 81> buckets;
+        std::vector<unsigned char> walk;
+        std::vector<int> safeCells;
+        std::vector<std::vector<Actor::Id>> buckets;
         float pulse = 0;
+        size_t observationCursor = 0;
+        float observationCredits = 0;
         double economyMinute = 0;
         int routeBudget = 0;
+        int routeCredits = 0;
+        std::vector<int> routePrevious, routeCost;
+        std::vector<unsigned> routeStamp;
+        unsigned routeSearch = 0;
         Person& Spawn(const std::string& key,
                       const std::wstring& name,
                       Species species,

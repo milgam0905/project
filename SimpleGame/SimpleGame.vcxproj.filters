@@ -18,6 +18,14 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ResourceSprites.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClInclude Include="ResourceSprites.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
     <Text Include="..\TUTORIAL_LEVEL_DESIGN.txt" />
     <Text Include="..\LEVEL_ONE_DESIGN.txt" />
     <Text Include="..\ACTOR_SCENE_GRAPH.txt" />
@@ -105,6 +113,7 @@
     <ClCompile Include="LenaGame.cpp"><Filter>소스 파일</Filter></ClCompile>
     <ClCompile Include="LenaWorld.cpp"><Filter>소스 파일</Filter></ClCompile>
     <ClCompile Include="ArcanaWorld.cpp"><Filter>소스 파일</Filter></ClCompile>
+    <ClCompile Include="ArcanaExpansion.cpp"><Filter>소스 파일</Filter></ClCompile>
     <ClCompile Include="ArcanaNative.cpp"><Filter>소스 파일</Filter></ClCompile>
     <ClCompile Include="LenaWorldChecks.cpp"><Filter>소스 파일</Filter></ClCompile>
     <ClCompile Include="Actor.cpp">

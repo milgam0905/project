@@ -1,0 +1,1727 @@
+{
+  "schema": "arcana.asset_pack.v1",
+  "created": "2026-10-21",
+  "authoring": "Blender 5.2.2 LTS",
+  "units": "meters",
+  "assets": [
+    {
+      "file": "animals/boar.glb",
+      "bytes": 345972,
+      "triangles": 1651,
+      "meshes": 5,
+      "skins": 1,
+      "animations": [
+        "BOAR_Attack",
+        "BOAR_Idle",
+        "BOAR_Jump",
+        "BOAR_Reference",
+        "BOAR_Run",
+        "BOAR_Turn_Base",
+        "BOAR_Turn_L90",
+        "BOAR_Turn_R90",
+        "BOAR_Walk"
+      ]
+    },
+    {
+      "file": "animals/boar_parts/boar_body_base.glb",
+      "bytes": 164736,
+      "triangles": 216,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "BOAR_Attack",
+        "BOAR_Idle",
+        "BOAR_Jump",
+        "BOAR_Reference",
+        "BOAR_Run",
+        "BOAR_Turn_Base",
+        "BOAR_Turn_L90",
+        "BOAR_Turn_R90",
+        "BOAR_Walk"
+      ]
+    },
+    {
+      "file": "animals/boar_parts/boar_body_dark.glb",
+      "bytes": 164780,
+      "triangles": 216,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "BOAR_Attack",
+        "BOAR_Idle",
+        "BOAR_Jump",
+        "BOAR_Reference",
+        "BOAR_Run",
+        "BOAR_Turn_Base",
+        "BOAR_Turn_L90",
+        "BOAR_Turn_R90",
+        "BOAR_Walk"
+      ]
+    },
+    {
+      "file": "animals/boar_parts/boar_head_base.glb",
+      "bytes": 206772,
+      "triangles": 494,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "BOAR_Attack",
+        "BOAR_Idle",
+        "BOAR_Jump",
+        "BOAR_Reference",
+        "BOAR_Run",
+        "BOAR_Turn_Base",
+        "BOAR_Turn_L90",
+        "BOAR_Turn_R90",
+        "BOAR_Walk"
+      ]
+    },
+    {
+      "file": "animals/boar_parts/boar_legs_base.glb",
+      "bytes": 236804,
+      "triangles": 824,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "BOAR_Attack",
+        "BOAR_Idle",
+        "BOAR_Jump",
+        "BOAR_Reference",
+        "BOAR_Run",
+        "BOAR_Turn_Base",
+        "BOAR_Turn_L90",
+        "BOAR_Turn_R90",
+        "BOAR_Walk"
+      ]
+    },
+    {
+      "file": "animals/boar_parts/boar_tail_base.glb",
+      "bytes": 145120,
+      "triangles": 44,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "BOAR_Attack",
+        "BOAR_Idle",
+        "BOAR_Jump",
+        "BOAR_Reference",
+        "BOAR_Run",
+        "BOAR_Turn_Base",
+        "BOAR_Turn_L90",
+        "BOAR_Turn_R90",
+        "BOAR_Walk"
+      ]
+    },
+    {
+      "file": "animals/boar_parts/boar_tusks_mane_base.glb",
+      "bytes": 150316,
+      "triangles": 73,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "BOAR_Attack",
+        "BOAR_Idle",
+        "BOAR_Jump",
+        "BOAR_Reference",
+        "BOAR_Run",
+        "BOAR_Turn_Base",
+        "BOAR_Turn_L90",
+        "BOAR_Turn_R90",
+        "BOAR_Walk"
+      ]
+    },
+    {
+      "file": "animals/deer.glb",
+      "bytes": 365820,
+      "triangles": 1830,
+      "meshes": 5,
+      "skins": 1,
+      "animations": [
+        "DEER_Attack",
+        "DEER_Idle",
+        "DEER_Jump",
+        "DEER_Reference",
+        "DEER_Run",
+        "DEER_Turn_Base",
+        "DEER_Turn_L90",
+        "DEER_Turn_R90",
+        "DEER_Walk"
+      ]
+    },
+    {
+      "file": "animals/deer_parts/deer_antlers_stag.glb",
+      "bytes": 161348,
+      "triangles": 192,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "DEER_Attack",
+        "DEER_Idle",
+        "DEER_Jump",
+        "DEER_Reference",
+        "DEER_Run",
+        "DEER_Turn_Base",
+        "DEER_Turn_L90",
+        "DEER_Turn_R90",
+        "DEER_Walk"
+      ]
+    },
+    {
+      "file": "animals/deer_parts/deer_body_base.glb",
+      "bytes": 174032,
+      "triangles": 276,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "DEER_Attack",
+        "DEER_Idle",
+        "DEER_Jump",
+        "DEER_Reference",
+        "DEER_Run",
+        "DEER_Turn_Base",
+        "DEER_Turn_L90",
+        "DEER_Turn_R90",
+        "DEER_Walk"
+      ]
+    },
+    {
+      "file": "animals/deer_parts/deer_body_dark.glb",
+      "bytes": 174080,
+      "triangles": 276,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "DEER_Attack",
+        "DEER_Idle",
+        "DEER_Jump",
+        "DEER_Reference",
+        "DEER_Run",
+        "DEER_Turn_Base",
+        "DEER_Turn_L90",
+        "DEER_Turn_R90",
+        "DEER_Walk"
+      ]
+    },
+    {
+      "file": "animals/deer_parts/deer_head_base.glb",
+      "bytes": 206868,
+      "triangles": 494,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "DEER_Attack",
+        "DEER_Idle",
+        "DEER_Jump",
+        "DEER_Reference",
+        "DEER_Run",
+        "DEER_Turn_Base",
+        "DEER_Turn_L90",
+        "DEER_Turn_R90",
+        "DEER_Walk"
+      ]
+    },
+    {
+      "file": "animals/deer_parts/deer_legs_base.glb",
+      "bytes": 237048,
+      "triangles": 824,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "DEER_Attack",
+        "DEER_Idle",
+        "DEER_Jump",
+        "DEER_Reference",
+        "DEER_Run",
+        "DEER_Turn_Base",
+        "DEER_Turn_L90",
+        "DEER_Turn_R90",
+        "DEER_Walk"
+      ]
+    },
+    {
+      "file": "animals/deer_parts/deer_tail_base.glb",
+      "bytes": 145372,
+      "triangles": 44,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "DEER_Attack",
+        "DEER_Idle",
+        "DEER_Jump",
+        "DEER_Reference",
+        "DEER_Run",
+        "DEER_Turn_Base",
+        "DEER_Turn_L90",
+        "DEER_Turn_R90",
+        "DEER_Walk"
+      ]
+    },
+    {
+      "file": "animals/goat.glb",
+      "bytes": 359780,
+      "triangles": 1762,
+      "meshes": 5,
+      "skins": 1,
+      "animations": [
+        "GOAT_Attack",
+        "GOAT_Idle",
+        "GOAT_Jump",
+        "GOAT_Reference",
+        "GOAT_Run",
+        "GOAT_Turn_Base",
+        "GOAT_Turn_L90",
+        "GOAT_Turn_R90",
+        "GOAT_Walk"
+      ]
+    },
+    {
+      "file": "animals/goat_parts/goat_body_base.glb",
+      "bytes": 174364,
+      "triangles": 276,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "GOAT_Attack",
+        "GOAT_Idle",
+        "GOAT_Jump",
+        "GOAT_Reference",
+        "GOAT_Run",
+        "GOAT_Turn_Base",
+        "GOAT_Turn_L90",
+        "GOAT_Turn_R90",
+        "GOAT_Walk"
+      ]
+    },
+    {
+      "file": "animals/goat_parts/goat_body_dark.glb",
+      "bytes": 174412,
+      "triangles": 276,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "GOAT_Attack",
+        "GOAT_Idle",
+        "GOAT_Jump",
+        "GOAT_Reference",
+        "GOAT_Run",
+        "GOAT_Turn_Base",
+        "GOAT_Turn_L90",
+        "GOAT_Turn_R90",
+        "GOAT_Walk"
+      ]
+    },
+    {
+      "file": "animals/goat_parts/goat_head_base.glb",
+      "bytes": 207200,
+      "triangles": 494,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "GOAT_Attack",
+        "GOAT_Idle",
+        "GOAT_Jump",
+        "GOAT_Reference",
+        "GOAT_Run",
+        "GOAT_Turn_Base",
+        "GOAT_Turn_L90",
+        "GOAT_Turn_R90",
+        "GOAT_Walk"
+      ]
+    },
+    {
+      "file": "animals/goat_parts/goat_horns_base.glb",
+      "bytes": 155584,
+      "triangles": 124,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "GOAT_Attack",
+        "GOAT_Idle",
+        "GOAT_Jump",
+        "GOAT_Reference",
+        "GOAT_Run",
+        "GOAT_Turn_Base",
+        "GOAT_Turn_L90",
+        "GOAT_Turn_R90",
+        "GOAT_Walk"
+      ]
+    },
+    {
+      "file": "animals/goat_parts/goat_legs_base.glb",
+      "bytes": 237388,
+      "triangles": 824,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "GOAT_Attack",
+        "GOAT_Idle",
+        "GOAT_Jump",
+        "GOAT_Reference",
+        "GOAT_Run",
+        "GOAT_Turn_Base",
+        "GOAT_Turn_L90",
+        "GOAT_Turn_R90",
+        "GOAT_Walk"
+      ]
+    },
+    {
+      "file": "animals/goat_parts/goat_tail_base.glb",
+      "bytes": 145696,
+      "triangles": 44,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "GOAT_Attack",
+        "GOAT_Idle",
+        "GOAT_Jump",
+        "GOAT_Reference",
+        "GOAT_Run",
+        "GOAT_Turn_Base",
+        "GOAT_Turn_L90",
+        "GOAT_Turn_R90",
+        "GOAT_Walk"
+      ]
+    },
+    {
+      "file": "animals/wolf.glb",
+      "bytes": 382456,
+      "triangles": 1914,
+      "meshes": 5,
+      "skins": 1,
+      "animations": [
+        "WOLF_Attack",
+        "WOLF_Idle",
+        "WOLF_Jump",
+        "WOLF_Reference",
+        "WOLF_Run",
+        "WOLF_Turn_Base",
+        "WOLF_Turn_L90",
+        "WOLF_Turn_R90",
+        "WOLF_Walk"
+      ]
+    },
+    {
+      "file": "animals/wolf_parts/wolf_body_base.glb",
+      "bytes": 171884,
+      "triangles": 276,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "WOLF_Attack",
+        "WOLF_Idle",
+        "WOLF_Jump",
+        "WOLF_Reference",
+        "WOLF_Run",
+        "WOLF_Turn_Base",
+        "WOLF_Turn_L90",
+        "WOLF_Turn_R90",
+        "WOLF_Walk"
+      ]
+    },
+    {
+      "file": "animals/wolf_parts/wolf_body_dark.glb",
+      "bytes": 171876,
+      "triangles": 276,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "WOLF_Attack",
+        "WOLF_Idle",
+        "WOLF_Jump",
+        "WOLF_Reference",
+        "WOLF_Run",
+        "WOLF_Turn_Base",
+        "WOLF_Turn_L90",
+        "WOLF_Turn_R90",
+        "WOLF_Walk"
+      ]
+    },
+    {
+      "file": "animals/wolf_parts/wolf_head_base.glb",
+      "bytes": 204656,
+      "triangles": 494,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "WOLF_Attack",
+        "WOLF_Idle",
+        "WOLF_Jump",
+        "WOLF_Reference",
+        "WOLF_Run",
+        "WOLF_Turn_Base",
+        "WOLF_Turn_L90",
+        "WOLF_Turn_R90",
+        "WOLF_Walk"
+      ]
+    },
+    {
+      "file": "animals/wolf_parts/wolf_legs_base.glb",
+      "bytes": 273568,
+      "triangles": 1096,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "WOLF_Attack",
+        "WOLF_Idle",
+        "WOLF_Jump",
+        "WOLF_Reference",
+        "WOLF_Run",
+        "WOLF_Turn_Base",
+        "WOLF_Turn_L90",
+        "WOLF_Turn_R90",
+        "WOLF_Walk"
+      ]
+    },
+    {
+      "file": "animals/wolf_parts/wolf_ruff_base.glb",
+      "bytes": 139416,
+      "triangles": 4,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "WOLF_Attack",
+        "WOLF_Idle",
+        "WOLF_Jump",
+        "WOLF_Reference",
+        "WOLF_Run",
+        "WOLF_Turn_Base",
+        "WOLF_Turn_L90",
+        "WOLF_Turn_R90",
+        "WOLF_Walk"
+      ]
+    },
+    {
+      "file": "animals/wolf_parts/wolf_tail_base.glb",
+      "bytes": 143224,
+      "triangles": 44,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "WOLF_Attack",
+        "WOLF_Idle",
+        "WOLF_Jump",
+        "WOLF_Reference",
+        "WOLF_Run",
+        "WOLF_Turn_Base",
+        "WOLF_Turn_L90",
+        "WOLF_Turn_R90",
+        "WOLF_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_belt_pouch.glb",
+      "bytes": 176332,
+      "triangles": 176,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_boots_guard.glb",
+      "bytes": 205908,
+      "triangles": 424,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_boots_travel.glb",
+      "bytes": 194796,
+      "triangles": 336,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_boots_wrapped.glb",
+      "bytes": 217392,
+      "triangles": 560,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_face_soft.glb",
+      "bytes": 200812,
+      "triangles": 328,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_face_soft_skin_dark.glb",
+      "bytes": 200820,
+      "triangles": 328,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_face_soft_skin_pale.glb",
+      "bytes": 200832,
+      "triangles": 328,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_face_stern.glb",
+      "bytes": 204132,
+      "triangles": 360,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_face_stern_skin_dark.glb",
+      "bytes": 204144,
+      "triangles": 360,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_face_stern_skin_pale.glb",
+      "bytes": 204156,
+      "triangles": 360,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_face_weathered.glb",
+      "bytes": 202140,
+      "triangles": 340,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_face_weathered_skin_dark.glb",
+      "bytes": 202152,
+      "triangles": 340,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_face_weathered_skin_pale.glb",
+      "bytes": 202164,
+      "triangles": 340,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_hair_cropped.glb",
+      "bytes": 160288,
+      "triangles": 58,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_hair_grey.glb",
+      "bytes": 160272,
+      "triangles": 58,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_hair_hood.glb",
+      "bytes": 195620,
+      "triangles": 324,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_hair_swept.glb",
+      "bytes": 160288,
+      "triangles": 58,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_hands_skin.glb",
+      "bytes": 175424,
+      "triangles": 184,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_hands_skin_dark.glb",
+      "bytes": 175428,
+      "triangles": 184,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_hands_skin_pale.glb",
+      "bytes": 175440,
+      "triangles": 184,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_head_skin.glb",
+      "bytes": 183784,
+      "triangles": 260,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_head_skin_dark.glb",
+      "bytes": 183788,
+      "triangles": 260,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_head_skin_pale.glb",
+      "bytes": 183800,
+      "triangles": 260,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_legs_leather.glb",
+      "bytes": 170740,
+      "triangles": 164,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_legs_wool.glb",
+      "bytes": 170728,
+      "triangles": 164,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_neck_skin.glb",
+      "bytes": 156932,
+      "triangles": 28,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_neck_skin_dark.glb",
+      "bytes": 156936,
+      "triangles": 28,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_neck_skin_pale.glb",
+      "bytes": 156948,
+      "triangles": 28,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_outer_guard_armor.glb",
+      "bytes": 177680,
+      "triangles": 184,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_outer_smith_apron.glb",
+      "bytes": 160528,
+      "triangles": 46,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_torso_guard.glb",
+      "bytes": 196664,
+      "triangles": 376,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_torso_smith.glb",
+      "bytes": 196648,
+      "triangles": 376,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_torso_traveler.glb",
+      "bytes": 196664,
+      "triangles": 376,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_torso_villager.glb",
+      "bytes": 195432,
+      "triangles": 376,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_weapon_hammer.glb",
+      "bytes": 165840,
+      "triangles": 88,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/parts/HUM_weapon_sword.glb",
+      "bytes": 167976,
+      "triangles": 94,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/presets/blacksmith.glb",
+      "bytes": 416368,
+      "triangles": 2076,
+      "meshes": 11,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/presets/guard.glb",
+      "bytes": 445756,
+      "triangles": 2308,
+      "meshes": 11,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/presets/protagonist.glb",
+      "bytes": 394708,
+      "triangles": 1922,
+      "meshes": 9,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "characters/presets/villager.glb",
+      "bytes": 414252,
+      "triangles": 2134,
+      "meshes": 9,
+      "skins": 1,
+      "animations": [
+        "HUM_Attack",
+        "HUM_Idle",
+        "HUM_Jump",
+        "HUM_Reference_A",
+        "HUM_Run",
+        "HUM_Turn_Base",
+        "HUM_Turn_L90",
+        "HUM_Turn_R90",
+        "HUM_Walk"
+      ]
+    },
+    {
+      "file": "environment/anvil.glb",
+      "bytes": 14204,
+      "triangles": 160,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/axe.glb",
+      "bytes": 774920,
+      "triangles": 56,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/barrel.glb",
+      "bytes": 789628,
+      "triangles": 292,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/beam_2m.glb",
+      "bytes": 773160,
+      "triangles": 44,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/bed.glb",
+      "bytes": 789920,
+      "triangles": 240,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/bench.glb",
+      "bytes": 775772,
+      "triangles": 68,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/bowl.glb",
+      "bytes": 6684,
+      "triangles": 92,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/bucket.glb",
+      "bytes": 782232,
+      "triangles": 196,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/chair.glb",
+      "bytes": 779988,
+      "triangles": 128,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/chest_rigged.glb",
+      "bytes": 30032,
+      "triangles": 164,
+      "meshes": 2,
+      "skins": 1,
+      "animations": [
+        "CHEST_Close",
+        "CHEST_Closed",
+        "CHEST_Hold_Open",
+        "CHEST_Open"
+      ]
+    },
+    {
+      "file": "environment/chimney_1p6m.glb",
+      "bytes": 933688,
+      "triangles": 616,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/clay_pot.glb",
+      "bytes": 15080,
+      "triangles": 212,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/crate.glb",
+      "bytes": 783384,
+      "triangles": 180,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/crate_open.glb",
+      "bytes": 781708,
+      "triangles": 156,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/door_rigged.glb",
+      "bytes": 68732,
+      "triangles": 480,
+      "meshes": 1,
+      "skins": 1,
+      "animations": [
+        "DOOR_Close",
+        "DOOR_Closed",
+        "DOOR_Hold_Open",
+        "DOOR_Open"
+      ]
+    },
+    {
+      "file": "environment/fallen_log.glb",
+      "bytes": 730668,
+      "triangles": 84,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/fence_2m.glb",
+      "bytes": 779036,
+      "triangles": 124,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/fern.glb",
+      "bytes": 25336,
+      "triangles": 304,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/firewood_stack.glb",
+      "bytes": 777480,
+      "triangles": 120,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/floor_wood_2x2.glb",
+      "bytes": 797396,
+      "triangles": 352,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/foundation_2x2.glb",
+      "bytes": 889280,
+      "triangles": 44,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/gable_4m.glb",
+      "bytes": 1662452,
+      "triangles": 44,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/grass_clump_01.glb",
+      "bytes": 940916,
+      "triangles": 18,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/grass_clump_02.glb",
+      "bytes": 941736,
+      "triangles": 26,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/grass_clump_03.glb",
+      "bytes": 942548,
+      "triangles": 34,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/ground_grass.glb",
+      "bytes": 951232,
+      "triangles": 128,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/ground_path.glb",
+      "bytes": 1846652,
+      "triangles": 524,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/ground_soil.glb",
+      "bytes": 929252,
+      "triangles": 128,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/ground_stone.glb",
+      "bytes": 899024,
+      "triangles": 128,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/hammer.glb",
+      "bytes": 777036,
+      "triangles": 88,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/lantern.glb",
+      "bytes": 13360,
+      "triangles": 148,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/mushrooms.glb",
+      "bytes": 17860,
+      "triangles": 204,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/oak_mature.glb",
+      "bytes": 1650984,
+      "triangles": 436,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/oak_young.glb",
+      "bytes": 1650988,
+      "triangles": 436,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/pine_tall.glb",
+      "bytes": 1633652,
+      "triangles": 176,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/pitchfork.glb",
+      "bytes": 779512,
+      "triangles": 128,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/post_2p5m.glb",
+      "bytes": 773160,
+      "triangles": 44,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/prefab_cottage.glb",
+      "bytes": 3659528,
+      "triangles": 3820,
+      "meshes": 19,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/reeds.glb",
+      "bytes": 1743152,
+      "triangles": 468,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/ridge_2m.glb",
+      "bytes": 810700,
+      "triangles": 20,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/rock_01.glb",
+      "bytes": 888060,
+      "triangles": 20,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/rock_02.glb",
+      "bytes": 888056,
+      "triangles": 20,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/rock_03.glb",
+      "bytes": 888056,
+      "triangles": 20,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/roof_shingle_2m.glb",
+      "bytes": 49532,
+      "triangles": 684,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/roof_thatch_2m.glb",
+      "bytes": 857504,
+      "triangles": 684,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/sack.glb",
+      "bytes": 13492,
+      "triangles": 156,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/shelf.glb",
+      "bytes": 775808,
+      "triangles": 72,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/shovel.glb",
+      "bytes": 775808,
+      "triangles": 68,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/shrub.glb",
+      "bytes": 901556,
+      "triangles": 80,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/shutter_1m.glb",
+      "bytes": 773896,
+      "triangles": 48,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/spruce_young.glb",
+      "bytes": 1631416,
+      "triangles": 154,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/stairs_1m.glb",
+      "bytes": 892656,
+      "triangles": 88,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/stool.glb",
+      "bytes": 776620,
+      "triangles": 80,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/stump.glb",
+      "bytes": 734484,
+      "triangles": 144,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/table.glb",
+      "bytes": 801644,
+      "triangles": 408,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/tree_dead.glb",
+      "bytes": 743876,
+      "triangles": 296,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/wall_door_2m.glb",
+      "bytes": 1667668,
+      "triangles": 120,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/wall_solid_2m.glb",
+      "bytes": 1664288,
+      "triangles": 72,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/wall_window_2m.glb",
+      "bytes": 1670176,
+      "triangles": 156,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    },
+    {
+      "file": "environment/well.glb",
+      "bytes": 1665412,
+      "triangles": 140,
+      "meshes": 1,
+      "skins": 0,
+      "animations": []
+    }
+  ],
+  "counts": {
+    "glb": 128,
+    "blend": 10,
+    "texture_png": 24
+  }
+}

@@ -1,0 +1,106 @@
+[
+  {
+    "name": "wood",
+    "resolution": [
+      512,
+      512
+    ],
+    "tileable": true,
+    "maps": [
+      "basecolor_sRGB",
+      "roughness_linear",
+      "normal_OpenGL_linear"
+    ]
+  },
+  {
+    "name": "bark",
+    "resolution": [
+      512,
+      512
+    ],
+    "tileable": true,
+    "maps": [
+      "basecolor_sRGB",
+      "roughness_linear",
+      "normal_OpenGL_linear"
+    ]
+  },
+  {
+    "name": "stone",
+    "resolution": [
+      512,
+      512
+    ],
+    "tileable": true,
+    "maps": [
+      "basecolor_sRGB",
+      "roughness_linear",
+      "normal_OpenGL_linear"
+    ]
+  },
+  {
+    "name": "soil",
+    "resolution": [
+      512,
+      512
+    ],
+    "tileable": true,
+    "maps": [
+      "basecolor_sRGB",
+      "roughness_linear",
+      "normal_OpenGL_linear"
+    ]
+  },
+  {
+    "name": "grass",
+    "resolution": [
+      512,
+      512
+    ],
+    "tileable": true,
+    "maps": [
+      "basecolor_sRGB",
+      "roughness_linear",
+      "normal_OpenGL_linear"
+    ]
+  },
+  {
+    "name": "plaster",
+    "resolution": [
+      512,
+      512
+    ],
+    "tileable": true,
+    "maps": [
+      "basecolor_sRGB",
+      "roughness_linear",
+      "normal_OpenGL_linear"
+    ]
+  },
+  {
+    "name": "thatch",
+    "resolution": [
+      512,
+      512
+    ],
+    "tileable": true,
+    "maps": [
+      "basecolor_sRGB",
+      "roughness_linear",
+      "normal_OpenGL_linear"
+    ]
+  },
+  {
+    "name": "moss",
+    "resolution": [
+      512,
+      512
+    ],
+    "tileable": true,
+    "maps": [
+      "basecolor_sRGB",
+      "roughness_linear",
+      "normal_OpenGL_linear"
+    ]
+  }
+]

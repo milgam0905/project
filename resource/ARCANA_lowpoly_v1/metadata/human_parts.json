@@ -1,0 +1,209 @@
+{
+  "rig": "ARC_Human_v1",
+  "height_m": 1.8,
+  "head_units": 7,
+  "presets": {
+    "protagonist": [
+      "head_skin_pale",
+      "neck_skin_pale",
+      "hands_skin_pale",
+      "face_weathered_skin_pale",
+      "hair_swept",
+      "torso_traveler",
+      "legs_wool",
+      "boots_travel",
+      "belt_pouch"
+    ],
+    "villager": [
+      "head_skin",
+      "neck_skin",
+      "hands_skin",
+      "face_soft",
+      "hair_cropped",
+      "torso_villager",
+      "legs_wool",
+      "boots_wrapped",
+      "belt_pouch"
+    ],
+    "guard": [
+      "head_skin_dark",
+      "neck_skin_dark",
+      "hands_skin_dark",
+      "face_stern_skin_dark",
+      "hair_cropped",
+      "torso_guard",
+      "legs_leather",
+      "boots_guard",
+      "outer_guard_armor",
+      "belt_pouch",
+      "weapon_sword"
+    ],
+    "blacksmith": [
+      "head_skin",
+      "neck_skin",
+      "hands_skin",
+      "face_stern",
+      "hair_grey",
+      "torso_smith",
+      "legs_leather",
+      "boots_travel",
+      "outer_smith_apron",
+      "belt_pouch",
+      "weapon_hammer"
+    ]
+  },
+  "slots": {
+    "HUM_head_skin": {
+      "slot": "head",
+      "file": "characters/parts/HUM_head_skin.glb"
+    },
+    "HUM_neck_skin": {
+      "slot": "neck",
+      "file": "characters/parts/HUM_neck_skin.glb"
+    },
+    "HUM_hands_skin": {
+      "slot": "hands",
+      "file": "characters/parts/HUM_hands_skin.glb"
+    },
+    "HUM_head_skin_pale": {
+      "slot": "head",
+      "file": "characters/parts/HUM_head_skin_pale.glb"
+    },
+    "HUM_neck_skin_pale": {
+      "slot": "neck",
+      "file": "characters/parts/HUM_neck_skin_pale.glb"
+    },
+    "HUM_hands_skin_pale": {
+      "slot": "hands",
+      "file": "characters/parts/HUM_hands_skin_pale.glb"
+    },
+    "HUM_head_skin_dark": {
+      "slot": "head",
+      "file": "characters/parts/HUM_head_skin_dark.glb"
+    },
+    "HUM_neck_skin_dark": {
+      "slot": "neck",
+      "file": "characters/parts/HUM_neck_skin_dark.glb"
+    },
+    "HUM_hands_skin_dark": {
+      "slot": "hands",
+      "file": "characters/parts/HUM_hands_skin_dark.glb"
+    },
+    "HUM_face_stern": {
+      "slot": "face",
+      "file": "characters/parts/HUM_face_stern.glb"
+    },
+    "HUM_face_stern_skin_pale": {
+      "slot": "face",
+      "file": "characters/parts/HUM_face_stern_skin_pale.glb"
+    },
+    "HUM_face_stern_skin_dark": {
+      "slot": "face",
+      "file": "characters/parts/HUM_face_stern_skin_dark.glb"
+    },
+    "HUM_face_soft": {
+      "slot": "face",
+      "file": "characters/parts/HUM_face_soft.glb"
+    },
+    "HUM_face_soft_skin_pale": {
+      "slot": "face",
+      "file": "characters/parts/HUM_face_soft_skin_pale.glb"
+    },
+    "HUM_face_soft_skin_dark": {
+      "slot": "face",
+      "file": "characters/parts/HUM_face_soft_skin_dark.glb"
+    },
+    "HUM_face_weathered": {
+      "slot": "face",
+      "file": "characters/parts/HUM_face_weathered.glb"
+    },
+    "HUM_face_weathered_skin_pale": {
+      "slot": "face",
+      "file": "characters/parts/HUM_face_weathered_skin_pale.glb"
+    },
+    "HUM_face_weathered_skin_dark": {
+      "slot": "face",
+      "file": "characters/parts/HUM_face_weathered_skin_dark.glb"
+    },
+    "HUM_hair_cropped": {
+      "slot": "hair",
+      "file": "characters/parts/HUM_hair_cropped.glb"
+    },
+    "HUM_hair_swept": {
+      "slot": "hair",
+      "file": "characters/parts/HUM_hair_swept.glb"
+    },
+    "HUM_hair_grey": {
+      "slot": "hair",
+      "file": "characters/parts/HUM_hair_grey.glb"
+    },
+    "HUM_torso_traveler": {
+      "slot": "torso",
+      "file": "characters/parts/HUM_torso_traveler.glb"
+    },
+    "HUM_torso_villager": {
+      "slot": "torso",
+      "file": "characters/parts/HUM_torso_villager.glb"
+    },
+    "HUM_torso_guard": {
+      "slot": "torso",
+      "file": "characters/parts/HUM_torso_guard.glb"
+    },
+    "HUM_torso_smith": {
+      "slot": "torso",
+      "file": "characters/parts/HUM_torso_smith.glb"
+    },
+    "HUM_legs_wool": {
+      "slot": "legs",
+      "file": "characters/parts/HUM_legs_wool.glb"
+    },
+    "HUM_legs_leather": {
+      "slot": "legs",
+      "file": "characters/parts/HUM_legs_leather.glb"
+    },
+    "HUM_boots_travel": {
+      "slot": "boots",
+      "file": "characters/parts/HUM_boots_travel.glb"
+    },
+    "HUM_boots_wrapped": {
+      "slot": "boots",
+      "file": "characters/parts/HUM_boots_wrapped.glb"
+    },
+    "HUM_boots_guard": {
+      "slot": "boots",
+      "file": "characters/parts/HUM_boots_guard.glb"
+    },
+    "HUM_belt_pouch": {
+      "slot": "belt",
+      "file": "characters/parts/HUM_belt_pouch.glb"
+    },
+    "HUM_outer_smith_apron": {
+      "slot": "outer",
+      "file": "characters/parts/HUM_outer_smith_apron.glb"
+    },
+    "HUM_outer_guard_armor": {
+      "slot": "outer",
+      "file": "characters/parts/HUM_outer_guard_armor.glb"
+    },
+    "HUM_hair_hood": {
+      "slot": "hair",
+      "file": "characters/parts/HUM_hair_hood.glb"
+    },
+    "HUM_weapon_sword": {
+      "slot": "weapon",
+      "file": "characters/parts/HUM_weapon_sword.glb"
+    },
+    "HUM_weapon_hammer": {
+      "slot": "weapon",
+      "file": "characters/parts/HUM_weapon_hammer.glb"
+    }
+  },
+  "compatibility": "All v1 human parts share identical rest matrices, bind space and seam positions. Select one per slot. Outer/weapon optional.",
+  "skin_contract": "Match head, neck, hands and face skin suffix; face without suffix uses skin medium.",
+  "overlap_rules": [
+    "Tunic covers upper trouser seam",
+    "Apron and armor use outer slot; do not enable together",
+    "Hood replaces hair",
+    "Face is decorative rigid head geometry; no facial animation"
+  ]
+}

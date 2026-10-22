@@ -1,0 +1,34 @@
+{
+  "asset": {
+    "id": "deer",
+    "category": "animal",
+    "path": "animals/deer.glb",
+    "triangles": 1830,
+    "meshes": 5,
+    "temperament": "gentle",
+    "diet": "herbivore",
+    "gait": "four-beat walk / gathered gallop",
+    "walk_speed_mps": 0.6685,
+    "run_speed_mps": 3.3695
+  },
+  "parts": [
+    "deer_body_base",
+    "deer_legs_base",
+    "deer_head_base",
+    "deer_tail_base",
+    "deer_antlers_stag"
+  ],
+  "clips": [
+    "Reference",
+    "Idle",
+    "Walk",
+    "Run",
+    "Turn_L90",
+    "Turn_R90",
+    "Turn_Base",
+    "Attack",
+    "Jump"
+  ],
+  "compatibility": "Swap only within species and rig version. Antlers/horns/tusks/ruff optional; no cross-species leg swapping.",
+  "temperament_note": "Visual design classification; game AI and combat behavior are not implemented by these assets."
+}

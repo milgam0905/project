@@ -186,6 +186,7 @@
     <ClInclude Include="Actor.h" />
     <ClInclude Include="SceneGraph.h" />
     <ClInclude Include="RenderAssets.h" />
+    <ClInclude Include="ResourceSprites.h" />
     <ClInclude Include="WorldGeometry.h" />
     <ClInclude Include="VillageBehavior.h" />
     <ClInclude Include="AssetCache.h" />
@@ -213,6 +214,10 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
+    <ClCompile Include="ArcanaExpansion.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
     <ClCompile Include="ArcanaNative.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
@@ -228,6 +233,7 @@
     <ClCompile Include="Actor.cpp" />
     <ClCompile Include="SceneGraph.cpp" />
     <ClCompile Include="RenderAssets.cpp" />
+    <ClCompile Include="ResourceSprites.cpp" />
     <ClCompile Include="AssetCache.cpp" />
     <ClCompile Include="LevelOneMap.cpp" />
     <ClCompile Include="LevelOneGame.cpp">
@@ -255,6 +261,14 @@
     <MakeDir Directories="$(OutDir)assets\arcana" />
     <Copy SourceFiles="$(ProjectDir)..\docs\ARCANA_module\data\blood_principle_game.db"
           DestinationFiles="$(OutDir)assets\arcana\blood_principle_game.db" SkipUnchangedFiles="true" />
+  </Target>
+  <ItemGroup>
+    <ArcanaSpriteContent Include="..\resource\ARCANA_runtime\*.png;..\resource\ARCANA_runtime\sprites.txt;..\resource\ARCANA_runtime\source.sha256" />
+  </ItemGroup>
+  <Target Name="CopyArcanaSprites" AfterTargets="Build">
+    <Error Condition="!Exists('$(ProjectDir)..\resource\ARCANA_runtime\sprites.txt')" Text="ARCANA sprites missing. Run: python tools/bake_arcana_resources.py" />
+    <MakeDir Directories="$(OutDir)assets\arcana_lowpoly" />
+    <Copy SourceFiles="@(ArcanaSpriteContent)" DestinationFolder="$(OutDir)assets\arcana_lowpoly" SkipUnchangedFiles="true" />
   </Target>
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

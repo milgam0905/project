@@ -3,6 +3,7 @@
 **/ipch/
 *.ipch
 /SimpleGame/x64/
+/x64/*/assets/
 *.exe
 *.obj
 *.pch

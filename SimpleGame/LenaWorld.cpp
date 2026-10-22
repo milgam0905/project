@@ -11,6 +11,8 @@
 #include <iomanip>
 #include <locale>
 #include <queue>
+#include <climits>
+#include <functional>
 #include <Windows.h>
 
 namespace Lena
@@ -143,13 +145,56 @@ namespace Lena
     World::World(bool arcanaMode)
     {
         Profiler::Scope scope("lena.initialize");
+        extent = arcanaMode ? 104.f : Extent;
+        lakeCenter = arcanaMode ? RenderPoint{16, -3} : RenderPoint{14, -8};
+        side = static_cast<int>(extent * 4);
+        bucketSide = static_cast<int>(std::ceil(extent * 2 / 6));
+        walk.resize(side * side);
+        buckets.resize(bucketSide * bucketSide);
         epoch = WorldMonitor::NextEpoch();
         houses = {{-6, 0}, {5, 1}, {-5, 8}, {5, 9}, {-9, 15}, {0, 16}, {9, 17}, {-13, 5}};
         if (arcanaMode)
         {
-            houses = {{-7, 0}, {5, 1}, {-5, 8}, {5, 9}, {-9, 15}, {0, 16}, {9, 17}, {12, 3}};
+            houses.clear();
+            for (const auto& village : Arcana::Villages())
+            {
+                for (auto offset : {RenderPoint{-6, 0},
+                                    RenderPoint{6, 0},
+                                    RenderPoint{0, -6},
+                                    RenderPoint{0, 6},
+                                    RenderPoint{-7, 3},
+                                    RenderPoint{7, -3}})
+                {
+                    houses.push_back({village.center.x + offset.x, village.center.y + offset.y});
+                }
+            }
         }
-        for (int i = 0; i < 130; ++i)
+        if (arcanaMode)
+        {
+            for (int i = 0; i < 360; ++i)
+            {
+                RenderPoint p{static_cast<float>((i * 37) % 199 - 99),
+                              static_cast<float>((i * 71) % 199 - 99)};
+                bool clear = Distance(p, canal) < 4 || Water(p);
+                for (const auto& village : Arcana::Villages())
+                {
+                    auto a = Arcana::Villages()[0].center;
+                    auto b = village.center;
+                    float dx = b.x - a.x, dy = b.y - a.y;
+                    float t = std::max(0.f,
+                                       std::min(1.f,
+                                                ((p.x - a.x) * dx + (p.y - a.y) * dy) /
+                                                    std::max(1.f, dx * dx + dy * dy)));
+                    clear = clear || Distance(p, village.center) < 10 ||
+                            Distance(p, {a.x + dx * t, a.y + dy * t}) < 2;
+                }
+                if (!clear)
+                {
+                    trees.push_back(p);
+                }
+            }
+        }
+        for (int i = 0; !arcanaMode && i < 130; ++i)
         {
             RenderPoint p{static_cast<float>((i * 37) % 49 - 24),
                           static_cast<float>((i * 19) % 49 - 24)};
@@ -165,6 +210,11 @@ namespace Lena
         {
             arcana = std::make_unique<Arcana::Module>(*this);
             arcana->Seed();
+            for (size_t i = 0; i < people.size(); ++i)
+            {
+                Find(people[i])->state.decision =
+                    static_cast<float>(i) / static_cast<float>(people.size());
+            }
             return;
         }
         playerId =
@@ -253,34 +303,34 @@ namespace Lena
 
     int World::Cell(RenderPoint p) const
     {
-        if (!std::isfinite(p.x) || !std::isfinite(p.y) || std::abs(p.x) > Extent ||
-            std::abs(p.y) > Extent)
+        if (!std::isfinite(p.x) || !std::isfinite(p.y) || std::abs(p.x) > extent ||
+            std::abs(p.y) > extent)
         {
             return -1;
         }
-        int x = static_cast<int>(std::floor((p.x + Extent) * 2));
-        int y = static_cast<int>(std::floor((p.y + Extent) * 2));
-        return x >= 0 && y >= 0 && x < Side && y < Side ? y * Side + x : -1;
+        int x = static_cast<int>(std::floor((p.x + extent) * 2));
+        int y = static_cast<int>(std::floor((p.y + extent) * 2));
+        return x >= 0 && y >= 0 && x < side && y < side ? y * side + x : -1;
     }
 
     RenderPoint World::Position(int cell) const
     {
-        return {(cell % Side + .5f) * .5f - Extent, (cell / Side + .5f) * .5f - Extent};
+        return {(cell % side + .5f) * .5f - extent, (cell / side + .5f) * .5f - extent};
     }
 
     bool World::Water(RenderPoint p) const
     {
-        float x = (p.x - 14) / 5, y = (p.y + 8) / 4;
+        float x = (p.x - lakeCenter.x) / 5, y = (p.y - lakeCenter.y) / 4;
         return x * x + y * y < 1 + .12f * std::sin(std::atan2(y, x) * 3);
     }
 
     void World::BuildNavigation()
     {
         Profiler::Scope scope("lena.navigation_build");
-        for (int i = 0; i < Side * Side; ++i)
+        for (int i = 0; i < side * side; ++i)
         {
             auto p = Position(i);
-            bool open = std::abs(p.x) < 25 && std::abs(p.y) < 25 && !Water(p);
+            bool open = std::abs(p.x) < extent - 1 && std::abs(p.y) < extent - 1 && !Water(p);
             for (auto h : houses)
             {
                 if (std::abs(p.x - h.x) < 1.5f && std::abs(p.y - h.y) < 1.2f)
@@ -297,7 +347,7 @@ namespace Lena
             }
             walk[i] = open;
         }
-        std::array<unsigned char, Side * Side> connected{};
+        std::vector<unsigned char> connected(side * side);
         std::queue<int> queue;
         int start = Cell(canal);
         connected[start] = 1;
@@ -306,11 +356,11 @@ namespace Lena
         {
             int at = queue.front();
             queue.pop();
-            for (int offset : {-1, 1, -Side, Side})
+            for (int offset : {-1, 1, -side, side})
             {
                 int next = at + offset;
-                if (next < 0 || next >= Side * Side ||
-                    (std::abs(offset) == 1 && at / Side != next / Side) || !walk[next] ||
+                if (next < 0 || next >= side * side ||
+                    (std::abs(offset) == 1 && at / side != next / side) || !walk[next] ||
                     connected[next])
                 {
                     continue;
@@ -320,6 +370,32 @@ namespace Lena
             }
         }
         walk = connected;
+        safeCells.assign(side * side, -1);
+        for (int i = 0; i < side * side; ++i)
+        {
+            if (walk[i])
+            {
+                safeCells[i] = i;
+                queue.push(i);
+            }
+        }
+        while (!queue.empty())
+        {
+            int at = queue.front();
+            queue.pop();
+            for (int offset : {-1, 1, -side, side})
+            {
+                int next = at + offset;
+                if (next < 0 || next >= side * side ||
+                    (std::abs(offset) == 1 && at / side != next / side) || safeCells[next] >= 0)
+                {
+                    continue;
+                }
+                safeCells[next] = safeCells[at];
+                queue.push(next);
+            }
+        }
+        Profiler::Gauge("arcana.navigation_cells", static_cast<double>(walk.size()));
     }
 
     bool World::Walkable(RenderPoint p) const
@@ -334,17 +410,14 @@ namespace Lena
         {
             return p;
         }
-        float best = 1e9f;
-        RenderPoint result = canal;
-        for (int i = 0; i < Side * Side; ++i)
+        if (!std::isfinite(p.x) || !std::isfinite(p.y))
         {
-            if (walk[i] && Distance(p, Position(i)) < best)
-            {
-                best = Distance(p, Position(i));
-                result = Position(i);
-            }
+            return canal;
         }
-        return result;
+        p.x = std::max(-extent + .25f, std::min(extent - .25f, p.x));
+        p.y = std::max(-extent + .25f, std::min(extent - .25f, p.y));
+        int cell = Cell(p);
+        return cell >= 0 && safeCells[cell] >= 0 ? Position(safeCells[cell]) : canal;
     }
 
     bool World::Visible(RenderPoint a, RenderPoint b) const
@@ -370,37 +443,68 @@ namespace Lena
         }
         --routeBudget;
         Profiler::Scope scope("lena.pathfind");
-        std::array<int, Side * Side> previous;
-        previous.fill(-1);
-        std::queue<int> queue;
+        if (routePrevious.size() != walk.size())
+        {
+            routePrevious.resize(walk.size());
+            routeCost.resize(walk.size());
+            routeStamp.assign(walk.size(), 0);
+        }
+        if (++routeSearch == 0)
+        {
+            std::fill(routeStamp.begin(), routeStamp.end(), 0);
+            ++routeSearch;
+        }
+        auto& previous = routePrevious;
+        auto& cost = routeCost;
+        using Candidate = std::pair<int, int>;
+        std::priority_queue<Candidate, std::vector<Candidate>, std::greater<Candidate>> queue;
         int start = Cell(p.Position()), goal = Cell(destination);
         if (start < 0 || goal < 0 || !walk[goal])
         {
             return false;
         }
         previous[start] = start;
-        queue.push(start);
-        while (!queue.empty() && previous[goal] == -1)
+        cost[start] = 0;
+        routeStamp[start] = routeSearch;
+        queue.push({0, start});
+        bool reached = false;
+        int visited = 0;
+        while (!queue.empty() && visited < 2048)
         {
-            int at = queue.front();
+            ++visited;
+            int at = queue.top().second;
             queue.pop();
-            for (int offset : {-1, 1, -Side, Side})
+            if (at == goal)
+            {
+                reached = true;
+                break;
+            }
+            for (int offset : {-1, 1, -side, side})
             {
                 int next = at + offset;
-                if (next < 0 || next >= Side * Side ||
-                    (std::abs(offset) == 1 && at / Side != next / Side) || !walk[next] ||
-                    previous[next] != -1)
+                if (next < 0 || next >= side * side ||
+                    (std::abs(offset) == 1 && at / side != next / side) || !walk[next] ||
+                    (routeStamp[next] == routeSearch && cost[next] <= cost[at] + 1))
                 {
                     continue;
                 }
                 previous[next] = at;
-                queue.push(next);
+                routeStamp[next] = routeSearch;
+                cost[next] = cost[at] + 1;
+                int estimate =
+                    std::abs(next % side - goal % side) + std::abs(next / side - goal / side);
+                queue.push({cost[next] + estimate, next});
             }
         }
         p.path.clear();
         p.pathIndex = 0;
-        p.routeTimer = 1.5f;
-        if (previous[goal] < 0)
+        p.routeTimer = 2.f + static_cast<float>(p.GetId() % 7) * .1f;
+        Profiler::Count("navigation.expanded_nodes", visited);
+        if (!reached && !queue.empty())
+        {
+            Profiler::Count("navigation.search_budget_exhausted");
+        }
+        if (!reached)
         {
             return false;
         }
@@ -421,13 +525,19 @@ namespace Lena
             return false;
         }
         RenderPoint from = p.Position(), next = destination;
-        if (!Visible(from, destination))
+        if (p.role == Role::Player || p.sightTimer <= 0 || Distance(p.sightGoal, destination) > .5f)
+        {
+            p.goalVisible = Visible(from, destination);
+            p.sightGoal = destination;
+            p.sightTimer = .2f;
+        }
+        if (!p.goalVisible)
         {
             if (p.role == Role::Player)
             {
                 return false;
             }
-            if (p.routeTimer <= 0 && !Route(p, destination))
+            if (p.pathIndex >= p.path.size() && p.routeTimer <= 0 && !Route(p, destination))
             {
                 return false;
             }
@@ -453,10 +563,15 @@ namespace Lena
         RenderPoint to{from.x + (next.x - from.x) * scale, from.y + (next.y - from.y) * scale};
         if (!Visible(from, to))
         {
-            p.routeTimer = 0;
+            p.path.clear();
+            p.pathIndex = 0;
+            p.routeTimer = std::max(.3f, p.routeTimer);
+            p.sightTimer = 0;
             return false;
         }
         p.SetPosition(to);
+        p.visualDirection = {to.x - from.x, to.y - from.y};
+        p.motionSeconds = .12f;
         if (arcana && p.role == Role::Player)
         {
             float length = Distance(from, to);
@@ -484,24 +599,26 @@ namespace Lena
             {
                 continue;
             }
-            int x = std::max(0, std::min(8, static_cast<int>((p->Position().x + Extent) / 6)));
-            int y = std::max(0, std::min(8, static_cast<int>((p->Position().y + Extent) / 6)));
-            buckets[y * 9 + x].push_back(id);
+            int x = std::max(
+                0, std::min(bucketSide - 1, static_cast<int>((p->Position().x + extent) / 6)));
+            int y = std::max(
+                0, std::min(bucketSide - 1, static_cast<int>((p->Position().y + extent) / 6)));
+            buckets[y * bucketSide + x].push_back(id);
         }
     }
 
     std::vector<Actor::Id> World::Nearby(RenderPoint p, float radius) const
     {
         std::vector<Actor::Id> result;
-        int minX = std::max(0, static_cast<int>((p.x - radius + Extent) / 6));
-        int minY = std::max(0, static_cast<int>((p.y - radius + Extent) / 6));
-        int maxX = std::min(8, static_cast<int>((p.x + radius + Extent) / 6));
-        int maxY = std::min(8, static_cast<int>((p.y + radius + Extent) / 6));
+        int minX = std::max(0, static_cast<int>((p.x - radius + extent) / 6));
+        int minY = std::max(0, static_cast<int>((p.y - radius + extent) / 6));
+        int maxX = std::min(bucketSide - 1, static_cast<int>((p.x + radius + extent) / 6));
+        int maxY = std::min(bucketSide - 1, static_cast<int>((p.y + radius + extent) / 6));
         for (int y = minY; y <= maxY; ++y)
         {
             for (int x = minX; x <= maxX; ++x)
             {
-                for (auto id : buckets[y * 9 + x])
+                for (auto id : buckets[y * bucketSide + x])
                 {
                     const auto* other = Find(id);
                     if (other && Distance(p, other->Position()) <= radius)
@@ -542,6 +659,10 @@ namespace Lena
 
     Fact* World::GetFact(std::uint64_t id)
     {
+        if (id > 0 && id <= facts.size() && facts[static_cast<size_t>(id - 1)].id == id)
+        {
+            return &facts[static_cast<size_t>(id - 1)];
+        }
         auto found = std::find_if(facts.begin(),
                                   facts.end(),
                                   [id](const Fact& fact)
@@ -554,15 +675,21 @@ namespace Lena
     void World::Observe(Person& p)
     {
         Profiler::Scope scope("lena.observe");
+        Profiler::Count("perception.facts_examined", facts.size());
         for (const auto& fact : facts)
         {
-            if (p.state.known.count(fact.id) || Distance(p.Position(), fact.position) > 7 ||
-                !Visible(p.Position(), fact.position))
+            if ((!fact.death && minutes - fact.minute > .6) ||
+                Distance(p.Position(), fact.position) > 7)
             {
                 continue;
             }
-            // An old body reveals a death, not the identity of an unseen killer.
-            if (!fact.death && minutes - fact.minute > .6)
+            const auto* currentVictim = Find(fact.victim);
+            if (arcana && fact.death && currentVictim &&
+                currentVictim->state.generation != fact.victimGeneration)
+            {
+                continue;
+            }
+            if (p.state.known.count(fact.id) || !Visible(p.Position(), fact.position))
             {
                 continue;
             }
@@ -639,6 +766,8 @@ namespace Lena
             fact.minute = minutes;
             fact.position = b.Position();
             fact.death = died;
+            fact.actorGeneration = a.state.generation;
+            fact.victimGeneration = b.state.generation;
             fact.intentional = intentional;
             fact.crime = crime;
             facts.push_back(fact);
@@ -653,7 +782,7 @@ namespace Lena
         b.path.clear();
         b.state.corpseFood = b.species == Species::Deer ? 24 : b.species == Species::Wolf ? 10 : 0;
         // The Actor becomes the corpse container; inventory is not copied or spawned twice.
-        if (b.settlement == 0)
+        if (!arcana && b.settlement == 0)
         {
             town.morale = std::max(0.0, town.morale - 2);
         }
@@ -876,7 +1005,10 @@ namespace Lena
     {
         auto& s = p.state;
         auto* target = Find(s.target);
-        float speed = p.species == Species::Deer ? 3.8f : p.species == Species::Wolf ? 3.5f : 2.4f;
+        float speed = p.beast                      ? 1.4f
+                      : p.species == Species::Deer ? 3.8f
+                      : p.species == Species::Wolf ? 3.5f
+                                                   : 2.4f;
         auto approach = [&](RenderPoint point)
         {
             return Move(p, point, speed * dt);
@@ -962,7 +1094,8 @@ namespace Lena
                 s.food -= 1;
                 s.hunger = Clamp(s.hunger - 45);
                 s.cooldown = 3;
-                town.consumption += 1;
+                auto& local = arcana ? arcana->Town(p.settlement) : town;
+                local.consumption += 1;
             }
             if (s.hunger < 30)
             {
@@ -970,9 +1103,11 @@ namespace Lena
             }
             break;
         case Action::Drink:
-            if (Distance(p.Position(), {8, -7}) > 1.5f)
+        {
+            RenderPoint water = arcana ? arcana->DrinkingPoint(p) : RenderPoint{8, -7};
+            if (Distance(p.Position(), water) > 1.5f)
             {
-                approach({8, -7});
+                approach(water);
             }
             else
             {
@@ -980,6 +1115,7 @@ namespace Lena
                 s.exposure = Clamp(s.exposure + dt * static_cast<float>(town.pollution) * .01f);
             }
             break;
+        }
         case Action::Sleep:
             if (Distance(p.Position(), p.home) > 1)
             {
@@ -994,7 +1130,7 @@ namespace Lena
             s.fatigue = Clamp(s.fatigue - dt);
             // Incapacitated actors need actual aid; no automatic resurrection/recovery from
             // critical wounds.
-            if (s.health > 12 && s.hunger < 70)
+            if (s.health > 12 && s.hunger < 70 && (!arcana || !p.beast || s.threatSeconds <= 0))
             {
                 s.health = std::min(arcana                       ? p.maxHealth
                                     : Human(p)                   ? 100.f
@@ -1080,7 +1216,7 @@ namespace Lena
             break;
         case Action::Report:
         {
-            Person* receiver = Find(darianId);
+            Person* receiver = arcana ? arcana->LocalGuard(p) : Find(darianId);
             if (!Alive(receiver))
             {
                 receiver = nullptr;
@@ -1113,7 +1249,8 @@ namespace Lena
                     fact->reported = true;
                     if (fact->crime)
                     {
-                        town.security = std::max(0.0, town.security - 2);
+                        auto& local = arcana ? arcana->Town(receiver->settlement) : town;
+                        local.security = std::max(0.0, local.security - 2);
                     }
                     Log(p.displayName + L"의 신고가 경비에게 도착했다. 조사 기록이 남았다.");
                     Profiler::Count("lena.reports_received");
@@ -1124,10 +1261,24 @@ namespace Lena
             break;
         }
         case Action::Talk:
+            if (arcana && Alive(target) && !contact)
+            {
+                approach(target->Position());
+                break;
+            }
             if (Alive(target) && contact && s.cooldown <= 0)
             {
+                if (arcana)
+                {
+                    arcana->Share(p, *target);
+                    arcana->Share(*target, p);
+                }
                 for (auto factId : s.known)
                 {
+                    if (arcana)
+                    {
+                        break;
+                    }
                     const auto* fact = GetFact(factId);
                     if (fact && target->state.known.insert(factId).second && fact->death)
                     {
@@ -1186,7 +1337,8 @@ namespace Lena
         for (auto id : people)
         {
             const auto* p = Find(id);
-            if (p && p->species == species && (species != Species::Human || p->settlement == 0) &&
+            if (p && p->species == species &&
+                (species != Species::Human || (arcana ? p->settlement >= 0 : p->settlement == 0)) &&
                 (!aliveOnly || !p->state.dead))
             {
                 ++count;
@@ -1324,21 +1476,32 @@ namespace Lena
         Profiler::Scope scope("lena.simulation");
         ++tick;
         minutes += arcana ? dt / 60.0 : dt * 1.2;
-        routeBudget = 2;
+        routeCredits = std::min(2, routeCredits + 1);
+        routeBudget = routeCredits >= 2 ? 1 : 0;
+        if (routeBudget)
+        {
+            routeCredits = 0;
+        }
         pulse -= dt;
         if (pulse <= 0)
         {
             RebuildIndex();
-            for (auto id : people)
-            {
-                auto* observer = Find(id);
-                if (Alive(observer) && observer->role != Role::Player)
-                {
-                    Observe(*observer);
-                }
-            }
             pulse = .25f;
         }
+        // Keep four observations/second per actor without a quarter-second population spike.
+        observationCredits =
+            std::min(32.f, observationCredits + dt * static_cast<float>(people.size()) * 4.f);
+        const int observations = std::min(16, static_cast<int>(observationCredits));
+        observationCredits -= observations;
+        for (int i = 0; i < observations && !people.empty(); ++i)
+        {
+            auto* observer = Find(people[observationCursor++ % people.size()]);
+            if (Alive(observer) && observer->role != Role::Player)
+            {
+                Observe(*observer);
+            }
+        }
+        Profiler::Count("perception.observation_slots", observations);
         // Stable SceneGraph/Actor ID order. Every hit and resource transfer rechecks current state.
         for (auto id : people)
         {
@@ -1353,6 +1516,8 @@ namespace Lena
             s.held += dt;
             s.decision -= dt;
             p->routeTimer -= dt;
+            p->sightTimer -= dt;
+            p->motionSeconds = std::max(0.f, p->motionSeconds - dt);
             s.hunger = Clamp(s.hunger + dt * .05f);
             s.thirst = Clamp(s.thirst + dt * .07f);
             s.fatigue = Clamp(s.fatigue + dt * .03f);
@@ -1368,7 +1533,7 @@ namespace Lena
             }
             Act(*p, dt);
         }
-        if (minutes - economyMinute >= 60)
+        if (!arcana && minutes - economyMinute >= 60)
         {
             Economy(minutes - economyMinute);
             economyMinute = minutes;
@@ -1564,56 +1729,63 @@ namespace Lena
         Log(L"이곳에는 현재 선택 가능한 사건이 없습니다. 게시판 또는 숲 흔적으로 이동하세요.");
     }
 
-    WorldMonitor::Snapshot World::Capture(bool paused) const
+    WorldMonitor::Snapshot World::Capture(bool paused,
+                                          size_t begin,
+                                          size_t count,
+                                          bool statistics) const
     {
         Profiler::Scope scope("monitor.capture");
         WorldMonitor::Snapshot snapshot;
         snapshot.epoch = epoch;
         snapshot.paused = paused || gameOver;
         snapshot.worldMinutes = minutes;
-        snapshot.minX = snapshot.minY = -Extent;
-        snapshot.maxX = snapshot.maxY = Extent;
-        WorldMonitor::Settlement settlement;
-        settlement.id = "SET_LENA";
-        settlement.name = L"레나";
-        settlement.metrics = {{"population", Population(Species::Human)},
-                              {"food_stock", town.food},
-                              {"water_stock", town.water},
-                              {"treasury", town.treasury},
-                              {"security", town.security},
-                              {"morale", town.morale},
-                              {"aether_pollution", town.pollution},
-                              {"plant_biomass", town.plants},
-                              {"food_produced", town.production},
-                              {"food_consumed", town.consumption}};
-        for (auto id : people)
+        snapshot.minX = snapshot.minY = -extent;
+        snapshot.maxX = snapshot.maxY = extent;
+        if (statistics)
         {
-            const auto* p = Find(id);
-            if (p && p->settlement == 0 && !p->state.dead)
+            WorldMonitor::Settlement settlement;
+            settlement.id = "SET_LENA";
+            settlement.name = L"레나";
+            settlement.metrics = {{"population", Population(Species::Human)},
+                                  {"food_stock", town.food},
+                                  {"water_stock", town.water},
+                                  {"treasury", town.treasury},
+                                  {"security", town.security},
+                                  {"morale", town.morale},
+                                  {"aether_pollution", town.pollution},
+                                  {"plant_biomass", town.plants},
+                                  {"food_produced", town.production},
+                                  {"food_consumed", town.consumption}};
+            for (auto id : people)
             {
-                settlement.metrics["resident_food_total"] += p->state.food;
-                settlement.metrics["resident_medicine_total"] += p->state.medicine;
-                settlement.metrics["resident_coins_total"] += p->state.coins;
+                const auto* p = Find(id);
+                if (p && p->settlement == 0 && !p->state.dead)
+                {
+                    settlement.metrics["resident_food_total"] += p->state.food;
+                    settlement.metrics["resident_medicine_total"] += p->state.medicine;
+                    settlement.metrics["resident_coins_total"] += p->state.coins;
+                }
             }
+            snapshot.settlements.push_back(settlement);
+            snapshot.metrics = {{"prologue", prologue},
+                                {"investigation", investigation},
+                                {"water_clue", waterClue ? 1 : 0},
+                                {"forest_clue", forestClue ? 1 : 0},
+                                {"death_facts",
+                                 static_cast<double>(std::count_if(facts.begin(),
+                                                                   facts.end(),
+                                                                   [](const Fact& f)
+                                                                   {
+                                                                       return f.death;
+                                                                   }))},
+                                {"fact_count", static_cast<double>(facts.size())},
+                                {"corridor_work_minutes", corridorWork}};
         }
-        snapshot.settlements.push_back(settlement);
-        snapshot.metrics = {{"prologue", prologue},
-                            {"investigation", investigation},
-                            {"water_clue", waterClue ? 1 : 0},
-                            {"forest_clue", forestClue ? 1 : 0},
-                            {"death_facts",
-                             static_cast<double>(std::count_if(facts.begin(),
-                                                               facts.end(),
-                                                               [](const Fact& f)
-                                                               {
-                                                                   return f.death;
-                                                               }))},
-                            {"fact_count", static_cast<double>(facts.size())},
-                            {"corridor_work_minutes", corridorWork}};
         const char* roles[] = {
             "resident", "merchant", "guard", "healer", "scholar", "bandit", "player"};
-        for (auto id : people)
+        for (size_t index = begin; index < people.size() && index - begin < count; ++index)
         {
+            auto id = people[index];
             const auto* p = Find(id);
             if (!p)
             {
@@ -1684,7 +1856,7 @@ namespace Lena
         }
         if (arcana)
         {
-            arcana->Enrich(snapshot);
+            arcana->Enrich(snapshot, statistics);
         }
         return snapshot;
     }
@@ -1708,7 +1880,7 @@ namespace Lena
 
         std::ofstream out((file + L".tmp").c_str(), std::ios::binary | std::ios::trunc);
         out.imbue(std::locale::classic());
-        out << std::setprecision(17) << (arcana ? "ARCANA_SAVE_1\n" : "LENA_SAVE_1\n");
+        out << std::setprecision(17) << (arcana ? "ARCANA_SAVE_2\n" : "LENA_SAVE_1\n");
         out << minutes << ' ' << tick << ' ' << factSequence << ' ' << economyMinute << ' '
             << prologue << ' ' << investigation << ' ' << prologueStarted << ' ' << waterClue << ' '
             << forestClue << ' ' << escorted << ' ' << hunting << ' ' << corridor << ' '
@@ -1741,7 +1913,9 @@ namespace Lena
             if (arcana)
             {
                 out << ' ' << s.manaCurrent << ' ' << s.manaMax << ' ' << s.deathMinute << ' '
-                    << s.playerCredit << ' ' << s.absorbed;
+                    << s.playerCredit << ' ' << s.absorbed << ' ' << s.generation << ' '
+                    << s.travelTown << ' ' << s.travelWait << ' ' << s.habitat.x << ' '
+                    << s.habitat.y;
             }
             out << '\n';
         }
@@ -1750,7 +1924,12 @@ namespace Lena
         {
             out << f.id << ' ' << f.actor << ' ' << f.victim << ' ' << f.minute << ' ' << f.death
                 << ' ' << f.intentional << ' ' << f.crime << ' ' << f.reported << ' '
-                << f.position.x << ' ' << f.position.y << '\n';
+                << f.position.x << ' ' << f.position.y;
+            if (arcana)
+            {
+                out << ' ' << f.actorGeneration << ' ' << f.victimGeneration;
+            }
+            out << '\n';
         }
         if (arcana)
         {
@@ -1787,7 +1966,7 @@ namespace Lena
         in.seekg(0);
         std::string version;
         in >> version;
-        if (version != (arcana ? "ARCANA_SAVE_1" : "LENA_SAVE_1"))
+        if (version != (arcana ? "ARCANA_SAVE_2" : "LENA_SAVE_1"))
         {
             return false;
         }
@@ -1856,8 +2035,8 @@ namespace Lena
             if (!in || key != Find(people[i])->key || knownCount > 100000 || action < 3 ||
                 action > 39 || !std::isfinite(positions[i].x) || !std::isfinite(positions[i].y) ||
                 !Walkable(positions[i]) || !std::isfinite(s.destination.x) ||
-                !std::isfinite(s.destination.y) || std::abs(s.destination.x) > Extent ||
-                std::abs(s.destination.y) > Extent || (s.target && !Find(s.target)) ||
+                !std::isfinite(s.destination.y) || std::abs(s.destination.x) > extent ||
+                std::abs(s.destination.y) > extent || (s.target && !Find(s.target)) ||
                 (s.aggressor && !Find(s.aggressor)))
             {
                 return false;
@@ -1903,10 +2082,14 @@ namespace Lena
             }
             if (arcana)
             {
-                in >> s.manaCurrent >> s.manaMax >> s.deathMinute >> s.playerCredit >> s.absorbed;
+                in >> s.manaCurrent >> s.manaMax >> s.deathMinute >> s.playerCredit >> s.absorbed >>
+                    s.generation >> s.travelTown >> s.travelWait >> s.habitat.x >> s.habitat.y;
                 if (!in || !finite(s.manaCurrent) || !finite(s.manaMax) ||
                     s.manaCurrent > s.manaMax || !finite(s.deathMinute) ||
-                    s.deathMinute > savedMinutes ||
+                    s.deathMinute > savedMinutes || s.generation > 1000000 ||
+                    (s.generation && !Find(people[i])->beast) || s.travelTown < -1 ||
+                    s.travelTown > 4 || !finite(s.travelWait) || s.travelWait > 30 ||
+                    !Walkable(s.habitat) ||
                     (s.absorbed && (!s.dead || !s.playerCredit || !Find(people[i])->beast)))
                 {
                     return false;
@@ -1921,11 +2104,20 @@ namespace Lena
         }
         std::vector<Fact> savedFacts(factCount);
         std::set<std::uint64_t> factIds;
-        std::set<Actor::Id> deathVictims;
+        std::set<std::pair<Actor::Id, unsigned>> deathVictims;
+        auto savedGeneration = [&](Actor::Id id)
+        {
+            auto index = std::find(people.begin(), people.end(), id) - people.begin();
+            return static_cast<size_t>(index) < states.size() ? states[index].generation : 0;
+        };
         for (auto& f : savedFacts)
         {
             in >> f.id >> f.actor >> f.victim >> f.minute >> f.death >> f.intentional >> f.crime >>
                 f.reported >> f.position.x >> f.position.y;
+            if (arcana)
+            {
+                in >> f.actorGeneration >> f.victimGeneration;
+            }
             if (!in || !f.id || f.id > savedSequence || !factIds.insert(f.id).second ||
                 !Find(f.actor) || !Find(f.victim) || !finite(f.minute) || f.minute > savedMinutes ||
                 !std::isfinite(f.position.x) || !std::isfinite(f.position.y) ||
@@ -1933,7 +2125,9 @@ namespace Lena
             {
                 return false;
             }
-            if (f.death && !deathVictims.insert(f.victim).second)
+            if (f.actorGeneration > savedGeneration(f.actor) ||
+                f.victimGeneration > savedGeneration(f.victim) ||
+                (f.death && !deathVictims.insert({f.victim, f.victimGeneration}).second))
             {
                 return false;
             }
@@ -1941,7 +2135,7 @@ namespace Lena
         for (size_t i = 0; i < count; ++i)
         {
             const auto& s = states[i];
-            if (s.dead != (deathVictims.count(people[i]) != 0) ||
+            if (s.dead != (deathVictims.count({people[i], s.generation}) != 0) ||
                 (s.report && !factIds.count(s.report)))
             {
                 return false;
@@ -1959,6 +2153,14 @@ namespace Lena
         {
             return false;
         }
+        for (const auto& remnant : arcanaProgress.remnants)
+        {
+            if (!deathVictims.count({remnant.slot, remnant.generation}) ||
+                savedGeneration(remnant.slot) <= remnant.generation)
+            {
+                return false;
+            }
+        }
         const auto playerIndex =
             static_cast<size_t>(std::find(people.begin(), people.end(), playerId) - people.begin());
         in >> std::ws;
@@ -1970,10 +2172,16 @@ namespace Lena
         {
             auto* p = Find(people[i]);
             p->state = std::move(states[i]);
+            if (arcana && p->beast)
+            {
+                p->home = p->work = p->state.habitat;
+            }
             p->SetPosition(positions[i]);
             p->path.clear();
             p->pathIndex = 0;
             p->routeTimer = 0;
+            p->sightTimer = 0;
+            p->motionSeconds = 0;
         }
         minutes = savedMinutes;
         tick = savedTick;
@@ -1997,6 +2205,8 @@ namespace Lena
         }
         messages.clear();
         pulse = 0;
+        observationCursor = 0;
+        observationCredits = 0;
         epoch = WorldMonitor::NextEpoch();
         RebuildIndex();
         Log(L"세계 전체 상태를 불러왔습니다. 사망·자원·기억·선택 결과도 함께 복원됩니다.");

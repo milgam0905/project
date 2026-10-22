@@ -288,9 +288,13 @@ render.world, draw_calls_per_frame, batch.split_topology, upload.dynamic_buffer_
 
 10. 로컬 월드 모니터링
 
-- monitor.capture: 약 1초마다 Actor 상태를 데이터로 복사하는 메인 스레드 CPU ms.
-- monitor.serialize: JSON 직렬화와 최신 전송 슬롯 등록 CPU ms. capture와 별도 구간.
-- monitor.snapshot_bytes: 관측 창에 생성한 JSON 바이트 합계 (실제 전송량과 다름).
+- monitor.capture: World::Capture의 DTO 생성 CPU ms. ARCANA/레나에서는 조각별로도 호출된다.
+- monitor.capture_slice: ARCANA/레나는 호스트 타이머당 최대 16개체를 복사한다.
+  마지막 조각에서 마을/월드 통계를 붙여 완전한 개체 목록을 전송한다. 부분 목록은 전송하지 않는다.
+- monitor.enqueue: 완성 DTO를 워커의 최신 전송 슬롯에 이동하는 메인 스레드 CPU ms.
+- monitor.last_serialize_wall_ms: 워커의 마지막 JSON 변환 경과 ms. 메인 스레드 CPU 시간이 아니다.
+  이전 monitor.serialize 범위는 제거했다. 스레드별 경과 시간을 game.update에 합산하지 않는다.
+- monitor.snapshot_bytes: 다음 Publish에서 지연 수집한 직렬화 바이트 합계 (실제 전송량과 다름).
 - monitor.entity_count: 마지막 스냅샷의 관측 개체 수.
 - monitor.sent / monitor.send_failures: HTTP 202 성공 / 실패 완료 건수. 메인 스레드에서 지연 수집.
 - monitor.coalesced_snapshots: 아직 전송하지 않은 이전 스냅샷을 최신으로 대체한 횟수.
@@ -317,7 +321,7 @@ Gauge: lena.population (생존 소속 주민), lena.food_rations (창고 배급 
   lena.fact_count (보관 사건 수), lena.wolf_count, lena.deer_count.
 
 판단 1초/공간 색인 0.25초. 이동과 전투는 고정 업데이트로 진행한다.
-근접 탐색은 6단위 공간 버킷으로 후보를 좁힌다. 경로 탐색은 업데이트당 최대 2회.
+근접 탐색은 6단위 공간 버킷으로 후보를 좁힌다. 경로 탐색은 고정 업데이트 두 번당 최대 1회.
 죽음이 발생해도 개체 Actor를 삭제/재생성하지 않고 같은 ID의 사체 컨테이너로 유지한다.
 관측한 사실을 세션 내 보관하므로 장시간 실행에서 fact_count, observe, save/load를 함께 본다.
 새 모드의 실제 성능 및 모든 동적 상호작용 결과는 빌드/실행으로 검증하지 않았다.
@@ -351,3 +355,47 @@ WBG 39개 노드의 로드 여부와 실제 유효 후보/실행된 행동 수�
 장기 실행은 lena.fact_count와 lena.observe, 저장 크기도 함께 확인한다.
 새 모드의 시간 배율은 1:1이므로 레나의 사건 빈도와 직접 비교하지 않는다.
 FPS/CPU/GPU 개선 여부는 측정하지 않았으며 빌드 및 플레이 검증은 사용자 수행이다.
+
+13. 다섯 마을 확장 월드
+
+CPU ms: arcana.spawn_points_build, arcana.expansion_update, arcana.village_economy,
+  arcana.rumor_contact, arcana.village_statistics.
+Count: arcana.monsters_respawned (새 세대 교체), arcana.monster_respawns_deferred (빈 지점 대기),
+  arcana.courier_arrivals (실제 마을 도착), arcana.rumors_delivered (대면으로 새로 전달한 사실 수),
+  arcana.rumors_cross_village (다른 소속 NPC에게 전달한 사실 수).
+Gauge: arcana.navigation_cells (보행 격자 셀 수), arcana.monster_spawn_points (보행 가능한 후보 수),
+  arcana.monsters_alive (생존 몹 수), arcana.couriers_alive (생존 행상 수).
+
+208x208 월드 / 416x416 보행 셀. 막힌 목적지는 생성 시 계산한 최근접 보행 표로 보정한다.
+길찾기는 heap 기반 A*이며 작업 배열은 재사용하고 방문 세대로 초기화 비용을 피한다.
+고정 업데이트 두 번당 최대 1회, 탐색당 큐 pop 최대 2048개로 제한한다.
+예산을 소진한 경로는 실패로 돌려 지연 재시도하며 기존 유효 경로는 도착할 때까지 재사용한다.
+원거리 행상도 실제 이동하여 소식을 운반하므로 시뮬레이션은 카메라 밖에서도 진행된다.
+현재는 영역별 물리/인구 LOD를 구현한 것이 아니다. 큰 월드에서 navigation/lena.observe,
+scene.sort와 expansion_update를 함께 관찰한다. 실제 이동 시간과 FPS는 사용자 실행으로 확인한다.
+
+14. 프레임 급락 완화와 resource 에셋
+
+제공 로그의 FPS 3.103 / game.update 평균 243.695ms와 GPU render.frame 평균 1.987ms는
+CPU 시뮬레이션 및 관측 비용이 주요 병목임을 보여준다. 같은 관측 창의 inclusive 합계는
+pathfind 488.731ms, observe 164.097ms, wbg_decide 138.336ms,
+monitor.capture 121.017ms, monitor.serialize 81.966ms다. 중첩 범위를 합산하지 않는다.
+이는 변경 전 측정이며 새 코드의 향상률을 뜻하지 않는다.
+
+navigation.expanded_nodes: 처리한 탐색 노드 수.
+navigation.search_budget_exhausted: 탐색 한도에 도달해 지연 재시도하는 경로 수.
+perception.observation_slots: 순환 관측 슬롯 수. 최대 16개/고정 업데이트로 분산한다.
+perception.facts_examined: 관측 루프가 검사한 보관 사건 수. 장기 실행 증가 비용을 추적한다.
+초기 AI 판단 시점을 1초 안에 분산한다. 관측은 거리/유효 시간 검사 후 Actor·기억·시야를 조회한다.
+이동은 0.2초간 목표 시야를 캐시하지만 실제 짧은 이동 구간의 충돌은 매번 검사한다.
+극단적으로 복잡한 길에서는 제한 탐색의 재시도 지연을 함께 확인해야 한다.
+
+resource.load / resource.png_load_upload / resource.place_props: 시작 시 CPU ms.
+resource.sprite_submissions: 리소스 스프라이트 제출 수 (draw call 수와 다름).
+resource.missing_sprite: 누락 키 수. 정상 구성에서는 0이어야 한다.
+resource.atlas_gpu_bytes: 아틀라스의 비압축 RGBA GPU 바이트. 지면 3장과 드라이버 오버헤드 제외.
+resource.sprite_count: 로드한 프레임/환경 스프라이트 수.
+GLB 스킨 계산·방향 투영·텍스처 디코드는 오프라인 캐시 생성 도구에서 수행한다.
+게임은 PNG 페이지를 시작 시 한 번 로드하고 SceneGraph 순서 그대로 RenderQueue에 제출한다.
+스프라이트 제출량, batch.split_texture, GPU render.world 및 scene.sort를 변경 전후 비교한다.
+빌드·게임 실행·FPS 개선 측정은 수행하지 않았다.

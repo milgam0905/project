@@ -1,0 +1,34 @@
+{
+  "asset": {
+    "id": "boar",
+    "category": "animal",
+    "path": "animals/boar.glb",
+    "triangles": 1651,
+    "meshes": 5,
+    "temperament": "dangerous_when_threatened",
+    "diet": "omnivore",
+    "gait": "four-beat walk / diagonal trot",
+    "walk_speed_mps": 0.4011,
+    "run_speed_mps": 2.4709
+  },
+  "parts": [
+    "boar_body_base",
+    "boar_legs_base",
+    "boar_head_base",
+    "boar_tail_base",
+    "boar_tusks_mane_base"
+  ],
+  "clips": [
+    "Reference",
+    "Idle",
+    "Walk",
+    "Run",
+    "Turn_L90",
+    "Turn_R90",
+    "Turn_Base",
+    "Attack",
+    "Jump"
+  ],
+  "compatibility": "Swap only within species and rig version. Antlers/horns/tusks/ruff optional; no cross-species leg swapping.",
+  "temperament_note": "Visual design classification; game AI and combat behavior are not implemented by these assets."
+}

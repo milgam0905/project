@@ -100,7 +100,8 @@ namespace
             Profiler::Count("loop.simulation_substeps", steps);
             Profiler::Gauge("loop.simulation_debt_ms", simulationDebt * 1000);
         }
-        if (WorldMonitor::IsDue())
+        game->PrepareMonitor();
+        if (game->MonitorReady() && WorldMonitor::IsDue())
         {
             WorldMonitor::Publish(game->CaptureMonitor());
         }

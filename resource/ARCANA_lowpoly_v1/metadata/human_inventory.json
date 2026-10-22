@@ -1,0 +1,282 @@
+[
+  {
+    "id": "HUM_head_skin",
+    "category": "human_part",
+    "path": "characters/parts/HUM_head_skin.glb",
+    "triangles": 260,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_neck_skin",
+    "category": "human_part",
+    "path": "characters/parts/HUM_neck_skin.glb",
+    "triangles": 28,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_hands_skin",
+    "category": "human_part",
+    "path": "characters/parts/HUM_hands_skin.glb",
+    "triangles": 184,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_head_skin_pale",
+    "category": "human_part",
+    "path": "characters/parts/HUM_head_skin_pale.glb",
+    "triangles": 260,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_neck_skin_pale",
+    "category": "human_part",
+    "path": "characters/parts/HUM_neck_skin_pale.glb",
+    "triangles": 28,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_hands_skin_pale",
+    "category": "human_part",
+    "path": "characters/parts/HUM_hands_skin_pale.glb",
+    "triangles": 184,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_head_skin_dark",
+    "category": "human_part",
+    "path": "characters/parts/HUM_head_skin_dark.glb",
+    "triangles": 260,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_neck_skin_dark",
+    "category": "human_part",
+    "path": "characters/parts/HUM_neck_skin_dark.glb",
+    "triangles": 28,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_hands_skin_dark",
+    "category": "human_part",
+    "path": "characters/parts/HUM_hands_skin_dark.glb",
+    "triangles": 184,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_face_stern",
+    "category": "human_part",
+    "path": "characters/parts/HUM_face_stern.glb",
+    "triangles": 360,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_face_stern_skin_pale",
+    "category": "human_part",
+    "path": "characters/parts/HUM_face_stern_skin_pale.glb",
+    "triangles": 360,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_face_stern_skin_dark",
+    "category": "human_part",
+    "path": "characters/parts/HUM_face_stern_skin_dark.glb",
+    "triangles": 360,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_face_soft",
+    "category": "human_part",
+    "path": "characters/parts/HUM_face_soft.glb",
+    "triangles": 328,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_face_soft_skin_pale",
+    "category": "human_part",
+    "path": "characters/parts/HUM_face_soft_skin_pale.glb",
+    "triangles": 328,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_face_soft_skin_dark",
+    "category": "human_part",
+    "path": "characters/parts/HUM_face_soft_skin_dark.glb",
+    "triangles": 328,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_face_weathered",
+    "category": "human_part",
+    "path": "characters/parts/HUM_face_weathered.glb",
+    "triangles": 340,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_face_weathered_skin_pale",
+    "category": "human_part",
+    "path": "characters/parts/HUM_face_weathered_skin_pale.glb",
+    "triangles": 340,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_face_weathered_skin_dark",
+    "category": "human_part",
+    "path": "characters/parts/HUM_face_weathered_skin_dark.glb",
+    "triangles": 340,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_hair_cropped",
+    "category": "human_part",
+    "path": "characters/parts/HUM_hair_cropped.glb",
+    "triangles": 58,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_hair_swept",
+    "category": "human_part",
+    "path": "characters/parts/HUM_hair_swept.glb",
+    "triangles": 58,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_hair_grey",
+    "category": "human_part",
+    "path": "characters/parts/HUM_hair_grey.glb",
+    "triangles": 58,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_torso_traveler",
+    "category": "human_part",
+    "path": "characters/parts/HUM_torso_traveler.glb",
+    "triangles": 376,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_torso_villager",
+    "category": "human_part",
+    "path": "characters/parts/HUM_torso_villager.glb",
+    "triangles": 376,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_torso_guard",
+    "category": "human_part",
+    "path": "characters/parts/HUM_torso_guard.glb",
+    "triangles": 376,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_torso_smith",
+    "category": "human_part",
+    "path": "characters/parts/HUM_torso_smith.glb",
+    "triangles": 376,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_legs_wool",
+    "category": "human_part",
+    "path": "characters/parts/HUM_legs_wool.glb",
+    "triangles": 164,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_legs_leather",
+    "category": "human_part",
+    "path": "characters/parts/HUM_legs_leather.glb",
+    "triangles": 164,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_boots_travel",
+    "category": "human_part",
+    "path": "characters/parts/HUM_boots_travel.glb",
+    "triangles": 336,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_boots_wrapped",
+    "category": "human_part",
+    "path": "characters/parts/HUM_boots_wrapped.glb",
+    "triangles": 560,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_boots_guard",
+    "category": "human_part",
+    "path": "characters/parts/HUM_boots_guard.glb",
+    "triangles": 424,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_belt_pouch",
+    "category": "human_part",
+    "path": "characters/parts/HUM_belt_pouch.glb",
+    "triangles": 176,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_outer_smith_apron",
+    "category": "human_part",
+    "path": "characters/parts/HUM_outer_smith_apron.glb",
+    "triangles": 46,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_outer_guard_armor",
+    "category": "human_part",
+    "path": "characters/parts/HUM_outer_guard_armor.glb",
+    "triangles": 184,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_hair_hood",
+    "category": "human_part",
+    "path": "characters/parts/HUM_hair_hood.glb",
+    "triangles": 324,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_weapon_sword",
+    "category": "human_part",
+    "path": "characters/parts/HUM_weapon_sword.glb",
+    "triangles": 94,
+    "meshes": 1
+  },
+  {
+    "id": "HUM_weapon_hammer",
+    "category": "human_part",
+    "path": "characters/parts/HUM_weapon_hammer.glb",
+    "triangles": 88,
+    "meshes": 1
+  },
+  {
+    "id": "protagonist",
+    "category": "human_preset",
+    "path": "characters/presets/protagonist.glb",
+    "triangles": 1922,
+    "meshes": 9
+  },
+  {
+    "id": "villager",
+    "category": "human_preset",
+    "path": "characters/presets/villager.glb",
+    "triangles": 2134,
+    "meshes": 9
+  },
+  {
+    "id": "guard",
+    "category": "human_preset",
+    "path": "characters/presets/guard.glb",
+    "triangles": 2308,
+    "meshes": 11
+  },
+  {
+    "id": "blacksmith",
+    "category": "human_preset",
+    "path": "characters/presets/blacksmith.glb",
+    "triangles": 2076,
+    "meshes": 11
+  }
+]

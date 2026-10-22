@@ -5,6 +5,7 @@
 #include "UiText.h"
 #include "RenderAssets.h"
 #include "WorldGeometry.h"
+#include "ResourceSprites.h"
 #include <algorithm>
 #include <cmath>
 #include <cctype>
@@ -38,11 +39,11 @@ namespace
         DWORD count = GetEnvironmentVariableW(L"LOCALAPPDATA", root, MAX_PATH);
         if (!count || count >= MAX_PATH)
         {
-            return arcanaMode ? L"arcana-save-v1.txt" : L"lena-save-v1.txt";
+            return arcanaMode ? L"arcana-save-v2.txt" : L"lena-save-v1.txt";
         }
         std::wstring directory = std::wstring(root) + L"\\SimpleGame";
         CreateDirectoryW(directory.c_str(), nullptr);
-        return directory + (arcanaMode ? L"\\arcana-save-v1.txt" : L"\\lena-save-v1.txt");
+        return directory + (arcanaMode ? L"\\arcana-save-v2.txt" : L"\\lena-save-v1.txt");
     }
 } // namespace
 
@@ -51,6 +52,7 @@ struct LenaGame::Impl
     Renderer renderer{1280, 800};
     UiText text;
     Lena::World world;
+    ResourceSprites resources;
     bool keys[256]{};
     bool help = true, quit = false;
     float time = 0;
@@ -74,19 +76,56 @@ struct LenaGame::Impl
     std::vector<GroundPatch> groundPatches;
     std::vector<MapVertex> minimapVertices;
     std::wstring savePath;
+    WorldMonitor::Snapshot monitorSnapshot;
+    size_t monitorCursor = 0;
+    bool monitorReady = false;
 
-    explicit Impl(bool arcanaMode) : world(arcanaMode), savePath(SavePath(arcanaMode))
+    void PrepareMonitor()
+    {
+        if (!WorldMonitor::Enabled() || monitorReady)
+        {
+            return;
+        }
+        Profiler::Scope scope("monitor.capture_slice");
+        auto part = world.Capture(help, monitorCursor, 16, false);
+        for (auto& entity : part.entities)
+        {
+            monitorSnapshot.entities.push_back(std::move(entity));
+        }
+        monitorCursor += 16;
+        if (monitorCursor >= world.people.size())
+        {
+            auto summary = world.Capture(help, world.people.size(), 0, true);
+            summary.entities = std::move(monitorSnapshot.entities);
+            monitorSnapshot = std::move(summary);
+            monitorReady = true;
+        }
+    }
+
+    explicit Impl(bool arcanaMode)
+        : renderer(1280, 800, !arcanaMode), world(arcanaMode), savePath(SavePath(arcanaMode))
     {
         Profiler::Scope scope("lena.scene_setup");
-        renderer.PrepareVillageAtlas();
-        grass = RenderAssets::MakeMaterial(RenderAssets::Grass);
-        dirt = RenderAssets::MakeMaterial(RenderAssets::Dirt);
-        stone = RenderAssets::MakeMaterial(RenderAssets::Stone);
+        if (arcanaMode)
+        {
+            resources.Load();
+            grass = resources.Ground(0);
+            dirt = resources.Ground(1);
+            stone = resources.Ground(2);
+        }
+        else
+        {
+            renderer.PrepareVillageAtlas();
+            grass = RenderAssets::MakeMaterial(RenderAssets::Grass);
+            dirt = RenderAssets::MakeMaterial(RenderAssets::Dirt);
+            stone = RenderAssets::MakeMaterial(RenderAssets::Stone);
+        }
         for (int i = 0; i < 64; ++i)
         {
             float angle = i * WorldGeometry::Pi / 32;
             float r = std::sqrt(1 + .12f * std::sin(angle * 3));
-            lake.push_back({14 + 5 * r * std::cos(angle), -8 + 4 * r * std::sin(angle)});
+            lake.push_back({world.lakeCenter.x + 5 * r * std::cos(angle),
+                            world.lakeCenter.y + 4 * r * std::sin(angle)});
         }
         BuildGround();
         BuildMinimap();
@@ -111,7 +150,14 @@ struct LenaGame::Impl
             const int palette = variant++ % 8;
             house.onDraw = [this, palette](const Actor& actor, const SceneView& view)
             {
-                renderer.DrawHouse(view.Screen(actor), palette, .94f);
+                if (world.arcana)
+                {
+                    resources.Draw("prefab_cottage", view.Screen(actor), 28.f);
+                }
+                else
+                {
+                    renderer.DrawHouse(view.Screen(actor), palette, .94f);
+                }
             };
             house.onShadow = [this](const Actor& actor, const SceneView& view)
             {
@@ -125,7 +171,15 @@ struct LenaGame::Impl
             const int palette = variant++ % 3;
             tree.onDraw = [this, palette](const Actor& actor, const SceneView& view)
             {
-                renderer.DrawTree(view.Screen(actor), palette, .85f);
+                if (world.arcana)
+                {
+                    const char* models[] = {"pine_tall", "oak_mature", "spruce_young"};
+                    resources.Draw(models[palette], view.Screen(actor), 30.f);
+                }
+                else
+                {
+                    renderer.DrawTree(view.Screen(actor), palette, .85f);
+                }
             };
             tree.onShadow = [this](const Actor& actor, const SceneView& view)
             {
@@ -151,24 +205,26 @@ struct LenaGame::Impl
             ruin.onDraw = [this](const Actor& actor, const SceneView& view)
             {
                 auto p = view.Screen(actor);
-                Box(p.x - 70, p.y - 12, 140, 15, C(.13f, .12f, .11f));
+                resources.Draw("foundation_2x2", p, 44.f, 1.f, true);
                 for (int i = 0; i < 5; ++i)
                 {
-                    Box(p.x - 65 + i * 30.f,
-                        p.y - 60 + i % 2 * 20.f,
-                        9,
-                        55 - i % 2 * 20.f,
-                        C(.19f, .15f, .12f));
+                    resources.Draw("post_2p5m", {p.x - 58 + i * 27.f, p.y - 8}, 23.f, 1.f, true);
                 }
                 if (world.arcana->State().step < 2)
                 {
-                    Box(p.x + 18, p.y - 24, 12, 10, C(.72f, .67f, .48f));
+                    resources.Draw("chest_rigged", {p.x + 18, p.y - 10}, 27.f);
                 }
             };
+            PlaceResources();
             Landmark(world.canal, L"북부 숲 / 재가 된 집 [E]", true);
             Landmark(world.arcana->forge, L"벨하임 / 브란의 대장간 [E·F]", true);
             Landmark(world.arcana->outpost, L"기사단 초소 / 은빛 문장 [E]", false);
             Landmark(world.arcana->territory, L"흑아 멧돼지의 영역", false);
+            for (const auto& village : Arcana::Villages())
+            {
+                Landmark(village.center, village.name, false);
+                Landmark({village.center.x + 1, village.center.y - 2}, L"우물 / E 음수", false);
+            }
             auto& effect = world.scene.Spawn(world.scene.Root(), "ArcanaFireSpell");
             effect.layer = ActorLayer::Effect;
             effect.cull = false;
@@ -187,7 +243,9 @@ struct LenaGame::Impl
             Landmark(world.forest, L"사슴 숲 / 먹이 이동 통로", false);
             Landmark({22, 20}, L"늑대 능선", false);
         }
-        Landmark({8, -7}, L"수원 / E 음수", false);
+        Landmark(world.arcana ? Point{world.lakeCenter.x - 6, world.lakeCenter.y} : Point{8, -7},
+                 L"수원 / E 음수",
+                 false);
         auto& hud = world.scene.Spawn(world.scene.Root(), "LenaHUD");
         hud.layer = ActorLayer::Interface;
         hud.cull = false;
@@ -200,9 +258,71 @@ struct LenaGame::Impl
     ~Impl()
     {
         RenderQueue::Flush();
-        for (GLuint texture : {grass, dirt, stone})
+        if (!world.arcana)
         {
-            glDeleteTextures(1, &texture);
+            for (GLuint texture : {grass, dirt, stone})
+            {
+                glDeleteTextures(1, &texture);
+            }
+        }
+    }
+
+    void Prop(const std::string& model, Point position, float scale = 42.f)
+    {
+        auto& actor = world.scene.Spawn(world.scene.Root(), "ArcanaResourceProp");
+        actor.SetPosition(position);
+        actor.onDraw = [this, model, scale](const Actor& object, const SceneView& view)
+        {
+            resources.Draw(model, view.Screen(object), scale);
+        };
+    }
+
+    void PlaceResources()
+    {
+        Profiler::Scope scope("resource.place_props");
+        for (const auto& village : Arcana::Villages())
+        {
+            const auto c = village.center;
+            // The well occupies the existing drinking interaction, not a new random marker.
+            Prop("well", {c.x + 1, c.y - 2}, 35.f);
+            Prop("table", {c.x + 3.2f, c.y + 2.2f}, 34.f);
+            Prop("bench", {c.x + 3.2f, c.y + 3}, 34.f);
+            Prop("crate_open", {c.x + 4.2f, c.y + 1.5f}, 36.f);
+            Prop("sack", {c.x + 4.5f, c.y + 2.2f}, 36.f);
+            Prop("barrel", {c.x - 3.1f, c.y + 1.1f}, 35.f);
+            Prop("bucket", {c.x + 1.6f, c.y - 2.4f}, 36.f);
+        }
+        const auto forge = world.arcana->forge;
+        Prop("anvil", forge, 45.f);
+        Prop("hammer", {forge.x + .4f, forge.y + .1f}, 42.f);
+        Prop("firewood_stack", {forge.x - 1.4f, forge.y + .4f}, 38.f);
+        Prop("barrel", {forge.x + 1.5f, forge.y + .2f}, 38.f);
+        size_t index = 0;
+        for (auto house : world.houses)
+        {
+            Prop(index++ % 2 ? "lantern" : "clay_pot", {house.x + 1.5f, house.y + 1.4f}, 34.f);
+        }
+        index = 0;
+        for (auto tree : world.trees)
+        {
+            // Reuse clear ground near existing vegetation; never cover a path or water.
+            Point p{tree.x + 1.1f, tree.y + .6f};
+            if (++index % 3 != 0 || !world.Walkable(p) || world.arcana->Location(p, 12) >= 0)
+            {
+                continue;
+            }
+            const char* plants[] = {"fern", "shrub", "grass_clump_01", "mushrooms", "rock_01"};
+            Prop(plants[(index / 3) % 5], p, 38.f);
+        }
+        for (int i = 0; i < 18; ++i)
+        {
+            float angle = i * WorldGeometry::Pi / 9;
+            Point p{world.lakeCenter.x + 5.8f * std::cos(angle),
+                    world.lakeCenter.y + 4.8f * std::sin(angle)};
+            if (world.Walkable(p))
+            {
+                Prop(i % 3 ? "reeds" : "rock_02", p, 38.f);
+            }
         }
     }
 
@@ -245,22 +365,29 @@ struct LenaGame::Impl
         {
             groundPatches.push_back({{a, b, c, d}, texture, color});
         };
-        ground({-26, -26}, {26, -26}, {26, 26}, {-26, 26}, grass, C(.52f, .59f, .49f));
+        float extent = world.extent;
+        ground({-extent, -extent},
+               {extent, -extent},
+               {extent, extent},
+               {-extent, extent},
+               grass,
+               C(.52f, .59f, .49f));
         ground({-13, 9}, {-6, 9}, {-6, 20}, {-13, 20}, dirt, C(.63f, .57f, .40f));
         // Curved continuous paths, not square walk tiles. Collision stays in world coordinates.
-        for (int branch = 0; branch < 3; ++branch)
+        for (int branch = 0; branch < (world.arcana ? 6 : 3); ++branch)
         {
             Point start = branch == 0 ? world.canal : world.square;
             Point end = branch == 0 ? world.square : branch == 1 ? world.forest : Point{-10, 18};
             if (world.arcana && branch > 0)
             {
-                end = branch == 1 ? world.arcana->territory : world.arcana->forge;
+                end = branch <= 4 ? Arcana::Villages()[branch].center : world.arcana->forge;
             }
             Point previous = start;
             for (int i = 1; i <= 28; ++i)
             {
                 float t = i / 28.f;
-                Point next{start.x + (end.x - start.x) * t + std::sin(t * WorldGeometry::Pi) * 2,
+                Point next{start.x + (end.x - start.x) * t +
+                               std::sin(t * WorldGeometry::Pi) * (world.arcana ? .4f : 2.f),
                            start.y + (end.y - start.y) * t};
                 float length = std::max(.01f, Lena::Distance(previous, next));
                 Point normal{-(next.y - previous.y) / length * .9f,
@@ -276,6 +403,19 @@ struct LenaGame::Impl
         }
         ground({-20, -21}, {-13, -21}, {-13, -14}, {-20, -14}, stone, C(.51f, .59f, .58f));
         ground({-3, 1}, {3, 1}, {3, 7}, {-3, 7}, stone, C(.67f, .62f, .51f));
+        if (world.arcana)
+        {
+            for (const auto& village : Arcana::Villages())
+            {
+                const auto p = village.center;
+                ground({p.x - 3, p.y - 3},
+                       {p.x + 3, p.y - 3},
+                       {p.x + 3, p.y + 3},
+                       {p.x - 3, p.y + 3},
+                       stone,
+                       C(.63f, .59f, .48f));
+            }
+        }
     }
 
     void DrawTerrain(const SceneView& view)
@@ -294,10 +434,10 @@ struct LenaGame::Impl
         renderer.DrawWaterPolygon(lake);
     }
 
-    static Point MapPoint(Point worldPosition)
+    Point MapPoint(Point worldPosition) const
     {
         auto projected = WorldGeometry::Project(worldPosition);
-        constexpr float scale = 246.f / (Lena::World::Extent * 168.f);
+        const float scale = 246.f / (world.extent * 168.f);
         return {1125 + projected.x * scale, 135 + projected.y * scale};
     }
 
@@ -327,7 +467,7 @@ struct LenaGame::Impl
         }
         for (size_t i = 0; i < lake.size(); ++i)
         {
-            triangle({14, -8}, lake[i], lake[(i + 1) % lake.size()], C(.18f, .43f, .63f));
+            triangle(world.lakeCenter, lake[i], lake[(i + 1) % lake.size()], C(.18f, .43f, .63f));
         }
         for (auto p : world.trees)
         {
@@ -381,6 +521,12 @@ struct LenaGame::Impl
         mark(world.canal, C(.95f, .4f, .2f), 5);
         mark(world.arcana->forge, C(1, .85f, .3f), 5);
         mark(world.arcana->outpost, C(.7f, .8f, 1), 5);
+        for (const auto& village : Arcana::Villages())
+        {
+            mark(village.center, C(1, .8f, .3f), 4);
+            auto p = MapPoint(village.center);
+            text.Draw(p.x + 3, p.y - 13, village.name.substr(0, 5), C(1, .92f, .7f), .45f);
+        }
         mark(world.Player().Position(), C(0, 0, 0), 8);
         mark(world.Player().Position(), C(1, 1, 1), 5);
         text.Draw(1006, 213, L"흰색: 나 · 파랑: 물 · 갈색: 건물", C(.85f, .87f, .82f), .57f);
@@ -390,9 +536,40 @@ struct LenaGame::Impl
     {
         const auto& s = person.state;
         auto foot = view.Screen(person);
+        if (world.arcana)
+        {
+            const std::string model =
+                person.species == Lena::Species::Deer   ? "deer"
+                : person.species == Lena::Species::Wolf ? (person.beast ? "boar" : "wolf")
+                : person.role == Lena::Role::Player     ? "protagonist"
+                : person.role == Lena::Role::Guard || person.role == Lena::Role::Bandit ? "guard"
+                : person.key == "bran_01" ? "blacksmith"
+                                          : "villager";
+            const int direction = WorldGeometry::FacingDirection(person.visualDirection);
+            bool attack = s.action == Lena::Action::Attack || s.action == Lena::Action::Kill;
+            if (person.role == Lena::Role::Player)
+            {
+                attack = world.arcana->attackSeconds > 0;
+            }
+            const char* clip = s.dead                     ? "dead"
+                               : attack                   ? "attack"
+                               : person.motionSeconds > 0 ? "walk"
+                                                          : "idle";
+            int frame =
+                s.dead ? 0
+                : attack && person.role == Lena::Role::Player
+                    ? std::min(5, static_cast<int>((1 - world.arcana->attackSeconds / .22f) * 6))
+                    : static_cast<int>((person.motionSeconds > 0 ? s.stride : time * 4) +
+                                       static_cast<float>(person.GetId() % 6)) %
+                          6;
+            resources.Animate(model, clip, direction, frame, foot);
+        }
         if (s.dead)
         {
-            Box(foot.x - 17, foot.y - 9, 34, 10, C(.23f, .16f, .14f, .85f));
+            if (!world.arcana)
+            {
+                Box(foot.x - 17, foot.y - 9, 34, 10, C(.23f, .16f, .14f, .85f));
+            }
             if (Lena::Distance(person.Position(), world.Player().Position()) < 3)
             {
                 text.Draw(foot.x - 36,
@@ -403,30 +580,25 @@ struct LenaGame::Impl
             }
             return;
         }
-        int frame = static_cast<int>(s.stride) % 8;
-        if (world.arcana && person.role == Lena::Role::Player && world.arcana->attackSeconds > 0)
+        if (!world.arcana)
         {
-            float phase = 1.f - world.arcana->attackSeconds / .22f;
-            foot.x += std::sin(phase * WorldGeometry::Pi) * s.facing * 4;
-            foot.y -= std::sin(phase * WorldGeometry::Pi) * 3;
-            frame = 2 + static_cast<int>(phase * 3);
-        }
-        if (person.species == Lena::Species::Human)
-        {
-            renderer.DrawCharacter(foot,
-                                   static_cast<int>(person.role),
-                                   s.facing > 0 ? 1 : 3,
-                                   frame,
-                                   person.role == Lena::Role::Player);
-        }
-        else if (person.species == Lena::Species::Wolf)
-        {
-            renderer.DrawCachedModel(
-                foot, person.beast ? RenderAssets::Boar : RenderAssets::Wolf, frame % 4, s.facing);
-        }
-        else
-        {
-            renderer.DrawAnimal(foot, 0, s.stride, s.facing);
+            int frame = static_cast<int>(s.stride) % 8;
+            if (person.species == Lena::Species::Human)
+            {
+                renderer.DrawCharacter(foot,
+                                       static_cast<int>(person.role),
+                                       s.facing > 0 ? 1 : 3,
+                                       frame,
+                                       person.role == Lena::Role::Player);
+            }
+            else if (person.species == Lena::Species::Wolf)
+            {
+                renderer.DrawCachedModel(foot, RenderAssets::Wolf, frame % 4, s.facing);
+            }
+            else
+            {
+                renderer.DrawAnimal(foot, 0, s.stride, s.facing);
+            }
         }
         float maximum = world.arcana                             ? person.maxHealth
                         : person.species == Lena::Species::Human ? 100.f
@@ -573,7 +745,7 @@ struct LenaGame::Impl
         Profiler::Scope scope("arcana.hud");
         const Color ink = C(.85f, .87f, .82f), gold = C(.88f, .74f, .46f);
         Box(18, 16, 954, 152, C(.025f, .04f, .05f, .94f));
-        text.Draw(34, 24, L"아르카나 : ARCANA · 북부 숲과 벨하임", gold, 1.15f);
+        text.Draw(34, 24, L"아르카나 : ARCANA · 다섯 마을과 숲길", gold, 1.15f);
         text.Draw(34, 66, world.arcana->Objective(), ink, .83f);
         const auto& state = world.Player().state;
         text.Draw(34,
@@ -633,7 +805,7 @@ struct LenaGame::Impl
                       .78f);
             text.Draw(198,
                       427,
-                      L"저장: LOCALAPPDATA / SimpleGame / arcana-save-v1.txt (레나 저장과 분리)",
+                      L"저장: LOCALAPPDATA / SimpleGame / arcana-save-v2.txt (확장 월드 전용)",
                       ink,
                       .7f);
             text.Draw(
@@ -714,7 +886,19 @@ bool LenaGame::WantsQuit() const
 
 WorldMonitor::Snapshot LenaGame::CaptureMonitor() const
 {
-    return m->world.Capture(m->help);
+    m->monitorReady = false;
+    m->monitorCursor = 0;
+    return std::move(m->monitorSnapshot);
+}
+
+bool LenaGame::MonitorReady() const
+{
+    return m->monitorReady;
+}
+
+void LenaGame::PrepareMonitor()
+{
+    m->PrepareMonitor();
 }
 
 void LenaGame::KeyDown(unsigned char key)
@@ -753,6 +937,9 @@ void LenaGame::KeyDown(unsigned char key)
         else
         {
             m->camera = WorldGeometry::Project(m->world.Player().Position());
+            m->monitorSnapshot = {};
+            m->monitorCursor = 0;
+            m->monitorReady = false;
         }
         ClearKeys();
         return;

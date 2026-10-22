@@ -16,6 +16,8 @@ class LenaGame : public GameMode
     void ClearKeys() override;
     bool WantsQuit() const override;
     WorldMonitor::Snapshot CaptureMonitor() const override;
+    bool MonitorReady() const override;
+    void PrepareMonitor() override;
 
   private:
     struct Impl;

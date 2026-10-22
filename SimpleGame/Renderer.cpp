@@ -281,6 +281,7 @@ struct Renderer::Impl
     GLuint sceneFbo = 0, sceneTexture = 0, bloomFbo[2] = {}, bloomTexture[2] = {};
     GLuint blur = 0, composite = 0;
     bool post = false;
+    bool usesExternalAssets = false;
     int windowW = 1280, windowH = 800;
     P camera = {0, 0};
     float time = 0;
@@ -294,16 +295,19 @@ struct Renderer::Impl
     GLint blurSource = -1, blurStep = -1, blurExtract = -1;
     GLint compositeScene = -1, compositeBloom = -1, compositeTexel = -1;
 
-    Impl()
+    explicit Impl(bool proceduralAssets) : usesExternalAssets(!proceduralAssets)
     {
         Profiler::Scope profile("render.initialize");
-        for (int i = 0; i < RenderAssets::MaterialCount; ++i)
+        for (int i = 0; proceduralAssets && i < RenderAssets::MaterialCount; ++i)
         {
             materials[i] = RenderAssets::MakeMaterial(static_cast<RenderAssets::Material>(i));
         }
 
-        atlas = RenderAssets::MakeCharacterAtlas();
-        modelAtlas = RenderAssets::MakeModelAtlas();
+        if (proceduralAssets)
+        {
+            atlas = RenderAssets::MakeCharacterAtlas();
+            modelAtlas = RenderAssets::MakeModelAtlas();
+        }
         fireProgram = Program(EffectShaders::Fire);
         waterProgram = Program(EffectShaders::Water);
         waterTime = waterProgram ? glGetUniformLocation(waterProgram, "uTime") : -1;
@@ -490,7 +494,7 @@ struct Renderer::Impl
     }
 };
 
-Renderer::Renderer(int width, int height) : m(new Impl)
+Renderer::Renderer(int width, int height, bool proceduralAssets) : m(new Impl(proceduralAssets))
 {
     Resize(width, height);
 }
@@ -499,7 +503,7 @@ Renderer::~Renderer() = default;
 
 bool Renderer::IsInitialized() const
 {
-    return m->atlas != 0;
+    return m->usesExternalAssets || m->atlas != 0;
 }
 
 bool Renderer::HasPostProcessing() const

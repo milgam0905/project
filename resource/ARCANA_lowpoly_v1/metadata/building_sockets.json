@@ -1,0 +1,106 @@
+{
+  "grid_m": 0.25,
+  "wall_width_m": 2,
+  "wall_height_m": 2.5,
+  "floor_module_m": [
+    2,
+    2
+  ],
+  "roof_half_span_m": 2,
+  "roof_rise_m": 1.25,
+  "sockets": {
+    "wall_solid_2m": {
+      "left": [
+        0,
+        0,
+        0
+      ],
+      "right": [
+        2,
+        0,
+        0
+      ],
+      "top": [
+        0,
+        0,
+        2.5
+      ]
+    },
+    "wall_door_2m": {
+      "left": [
+        0,
+        0,
+        0
+      ],
+      "right": [
+        2,
+        0,
+        0
+      ],
+      "top": [
+        0,
+        0,
+        2.5
+      ]
+    },
+    "wall_window_2m": {
+      "left": [
+        0,
+        0,
+        0
+      ],
+      "right": [
+        2,
+        0,
+        0
+      ],
+      "top": [
+        0,
+        0,
+        2.5
+      ]
+    },
+    "roof_thatch_2m": {
+      "eave": [
+        0,
+        0,
+        0
+      ],
+      "ridge": [
+        0,
+        2,
+        1.25
+      ],
+      "next": [
+        2,
+        0,
+        0
+      ]
+    },
+    "roof_shingle_2m": {
+      "eave": [
+        0,
+        0,
+        0
+      ],
+      "ridge": [
+        0,
+        2,
+        1.25
+      ],
+      "next": [
+        2,
+        0,
+        0
+      ]
+    }
+  },
+  "rules": [
+    "Wall pivot at lower left; +X width, local Z height",
+    "Floor pivot lower-left XY",
+    "Roof eave -> ridge is +Y, +Z",
+    "Cottage finished floor z=.27; walls start z=.27; eaves z=2.77",
+    "For opposite roof use Z rotation 180 degrees and translate x+2,y+4",
+    "1-meter door opening; dynamic door origin at left hinge, place local x=.56,z=0"
+  ]
+}

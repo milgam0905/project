@@ -20,6 +20,15 @@ namespace WorldGeometry
         return {screen.x / 84.f + screen.y / 42.f, -screen.x / 84.f + screen.y / 42.f};
     }
 
+    // Sprite directions are screen-relative: down, down-right, right, ... down-left.
+    inline int FacingDirection(RenderPoint worldDirection)
+    {
+        const auto screen = Project(worldDirection);
+        const float angle = std::atan2(screen.x, screen.y);
+        const int sector = static_cast<int>(std::lround(angle / (Pi / 4.f)));
+        return (sector + 8) % 8;
+    }
+
     inline float LakeRadius(float angle)
     {
         return 1.f + .075f * std::sin(angle * 3.f + .5f) + .045f * std::cos(angle * 5.f);

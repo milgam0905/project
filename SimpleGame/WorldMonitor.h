@@ -35,10 +35,12 @@ namespace WorldMonitor
         std::map<std::string, double> metrics;
     };
 
-    // Main thread only, including DTO collection and profiler calls.
+    // Public API, DTO collection and profiler calls: main thread only.
+    // The worker owns JSON serialization and HTTP; it publishes atomic measurements only.
     std::uint64_t NextEpoch();
     void Start(const std::string& worldId);
     bool IsDue();
-    void Publish(const Snapshot& snapshot);
+    bool Enabled();
+    void Publish(Snapshot snapshot);
     void Stop();
 } // namespace WorldMonitor

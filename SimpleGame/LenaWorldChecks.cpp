@@ -183,12 +183,65 @@ bool Lena::World::ArcanaSelfTest()
             check(moved && std::abs(actual.x - screenStep.x) < .001f &&
                       std::abs(actual.y - screenStep.y) < .001f,
                   "screen_aligned_eight_direction_movement");
+            const int expected = input.y > 0   ? (input.x > 0   ? 1
+                                                  : input.x < 0 ? 7
+                                                                : 0)
+                                 : input.y < 0 ? (input.x > 0   ? 3
+                                                  : input.x < 0 ? 5
+                                                                : 4)
+                                               : (input.x > 0 ? 2 : 6);
+            check(WorldGeometry::FacingDirection(world.Player().visualDirection) == expected,
+                  "sprite_facing_matches_screen_movement");
         }
     }
     world.Player().SetPosition(originalPosition);
-    check(world.Population(Species::Human) == 120 && world.Population(Species::Deer) == 28 &&
-              world.Population(Species::Wolf) == 12,
-          "db_population_without_double_counting");
+    auto snapshot = world.Capture(false);
+    check(world.Population(Species::Human) == 100 && world.Population(Species::Deer) == 28 &&
+              world.people.size() == 230 && snapshot.settlements.size() == 5,
+          "five_villages_and_fixed_capacity");
+    int monsterCount = 0;
+    for (const auto& entity : snapshot.entities)
+    {
+        monsterCount += entity.kind == "monster";
+    }
+    check(monsterCount == 100, "one_hundred_monsters_excludes_wildlife");
+    auto slice = world.Capture(false, 0, 16, false);
+    check(slice.entities.size() == 16 && slice.settlements.empty(), "bounded_monitor_entity_slice");
+    bool safeStart = true;
+    for (auto id : world.people)
+    {
+        const auto* p = world.Find(id);
+        if (p->beast)
+        {
+            safeStart = safeStart && Distance(p->Position(), world.canal) > 26 &&
+                        world.arcana->Location(p->Position(), 14) < 0;
+        }
+    }
+    check(safeStart, "monster_spawns_avoid_start_and_villages");
+    for (const auto& village : snapshot.settlements)
+    {
+        check(village.metrics.at("population") == 20, "twenty_residents_per_village");
+    }
+    for (int v = 1; v < 5; ++v)
+    {
+        auto start = Arcana::Villages()[0].center;
+        auto goal = Arcana::Villages()[v].center;
+        world.Player().SetPosition(start);
+        auto screen = WorldGeometry::Project({goal.x - start.x, goal.y - start.y});
+        float seconds = std::hypot(screen.x, screen.y) / 170;
+        int steps = static_cast<int>(std::ceil(seconds * 60));
+        bool clear = true;
+        for (int i = 1; i <= steps; ++i)
+        {
+            float t = static_cast<float>(i) / steps;
+            RenderPoint target{start.x + (goal.x - start.x) * t, start.y + (goal.y - start.y) * t};
+            clear = world.Move(world.Player(), target, 1) && clear;
+        }
+        check(clear && seconds >= 19 && seconds <= 21 &&
+                  Distance(world.Player().Position(), goal) < .01f,
+              "connected_twenty_second_town_road");
+    }
+    world.Player().SetPosition(originalPosition);
     Person* beast = nullptr;
     Person* serdin = nullptr;
     for (auto id : world.people)
@@ -232,7 +285,14 @@ bool Lena::World::ArcanaSelfTest()
     world.Interact();
     check(world.arcana->State().step == 7, "opening_quest_sequence");
 
-    world.Damage(world.Player(), *beast, 1000);
+    world.Damage(world.Player(), *beast, Arcana::BasicAttackDamage);
+    world.Damage(world.Player(), *beast, Arcana::BasicAttackDamage);
+    world.SetAction(*beast, Action::Rest);
+    world.Act(*beast, .55f);
+    check(!beast->state.dead && beast->state.health == 60,
+          "two_orb_hits_and_no_combat_regeneration");
+    world.Damage(world.Player(), *beast, Arcana::BasicAttackDamage);
+    check(beast->state.dead, "third_orb_hit_defeats_basic_monster");
     world.Player().SetPosition(beast->Position());
     world.RebuildIndex();
     current = world.Player().state.manaCurrent;
@@ -243,6 +303,61 @@ bool Lena::World::ArcanaSelfTest()
           "credited_beast_capacity_only");
     world.Interact();
     check(world.Player().state.manaMax == grown, "absorption_not_repeatable");
+
+    Person* listener = nullptr;
+    Person* resident = nullptr;
+    for (auto id : world.people)
+    {
+        auto* p = world.Find(id);
+        if (p->settlement == 1 && !p->courier)
+        {
+            listener = p;
+        }
+        if (p->settlement == 2 && !p->courier)
+        {
+            resident = p;
+        }
+    }
+    if (!listener || !resident)
+    {
+        check(false, "rumor_and_permanent_death_test_actors");
+        return false;
+    }
+    auto rumor = world.facts.back().id;
+    serdin->state.known.insert(rumor);
+    auto serdinStart = serdin->Position();
+    serdin->SetPosition(Arcana::Villages()[0].center);
+    listener->SetPosition(Arcana::Villages()[1].center);
+    world.arcana->Share(*serdin, *listener);
+    check(!listener->state.known.count(rumor), "rumor_cannot_cross_villages_remotely");
+    for (int i = 0; i < 1600 && Distance(serdin->Position(), listener->Position()) >= 1; ++i)
+    {
+        world.Move(*serdin, listener->Position(), 2.4f / 60);
+    }
+    world.arcana->Share(*serdin, *listener);
+    check(listener->state.known.count(rumor) != 0, "rumor_arrives_after_physical_travel");
+    serdin->SetPosition(serdinStart);
+    auto previousSpawn = beast->Position();
+    world.Damage(world.Player(), *resident, 1000);
+    world.Player().SetPosition(originalPosition);
+    world.minutes += .1;
+    world.arcana->Update(1.f / 60);
+    check(!beast->state.dead && beast->state.generation == 1 &&
+              Distance(beast->Position(), previousSpawn) >= 12 &&
+              Distance(beast->Position(), world.Player().Position()) >= 12,
+          "new_monster_generation_respawns_elsewhere");
+    check(resident->state.dead, "npc_death_does_not_respawn");
+    auto unabsorbedDeath = beast->Position();
+    world.Damage(world.Player(), *beast, 1000);
+    world.minutes += .1;
+    world.arcana->Update(1.f / 60);
+    check(beast->state.generation == 2 && !world.arcana->State().remnants.empty() &&
+              Distance(world.arcana->State().remnants.front().position, unabsorbedDeath) < .01f,
+          "respawn_preserves_unabsorbed_mana_at_death_site");
+    auto mood = world.Capture(false);
+    check(mood.settlements.size() == 5 && mood.settlements[2].metrics.at("resident_deaths") == 1 &&
+              mood.settlements[2].metrics.count("mood_calm") == 1,
+          "per_village_death_and_mood_statistics");
 
     wchar_t directory[MAX_PATH]{};
     wchar_t file[MAX_PATH]{};
@@ -260,6 +375,14 @@ bool Lena::World::ArcanaSelfTest()
           "restore_quests_growth_and_deaths");
     restored.Interact();
     check(restored.Player().state.manaMax == grown, "reload_does_not_duplicate_absorption");
+    check(!restored.arcana->State().remnants.empty(), "restore_unabsorbed_remnant");
+    if (!restored.arcana->State().remnants.empty())
+    {
+        restored.Player().SetPosition(restored.arcana->State().remnants.front().position);
+        restored.Interact();
+        check(restored.Player().state.manaMax > grown && restored.arcana->State().remnants.empty(),
+              "restored_remnant_absorbs_exactly_once");
+    }
     World legacy;
     check(!legacy.Load(file), "legacy_save_isolation");
     DeleteFileW(file);

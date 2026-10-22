@@ -13,4 +13,13 @@ class GameMode
     virtual void ClearKeys() = 0;
     virtual bool WantsQuit() const = 0;
     virtual WorldMonitor::Snapshot CaptureMonitor() const = 0;
+
+    virtual bool MonitorReady() const
+    {
+        return true;
+    }
+
+    virtual void PrepareMonitor()
+    {
+    }
 };

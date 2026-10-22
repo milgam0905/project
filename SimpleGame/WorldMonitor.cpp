@@ -172,9 +172,64 @@ namespace
                status == 202;
     }
 
+    std::string Serialize(const WorldMonitor::Snapshot& snapshot,
+                          const std::string& worldId,
+                          const std::string& instanceId,
+                          std::uint64_t sequence)
+    {
+        std::ostringstream out;
+        out.imbue(std::locale::classic());
+        out << std::fixed << std::setprecision(3) << std::boolalpha;
+        out << "{\"schema\":\"world-monitor.v1\",\"type\":\"snapshot\",\"game_id\":\"simplegame\","
+            << "\"world_id\":" << Quote(worldId) << ",\"instance_id\":" << Quote(instanceId)
+            << ",\"sequence\":" << sequence << ",\"epoch\":" << snapshot.epoch
+            << ",\"paused\":" << snapshot.paused << ",\"world_time_minutes\":";
+        Number(out, snapshot.worldMinutes, snapshot.worldMinutes < 0);
+        out << ",\"bounds\":{\"min_x\":" << snapshot.minX << ",\"min_y\":" << snapshot.minY
+            << ",\"max_x\":" << snapshot.maxX << ",\"max_y\":" << snapshot.maxY << "},\"metrics\":";
+        Metrics(out, snapshot.metrics);
+        out << ",\"settlements\":[";
+        bool first = true;
+        for (const auto& town : snapshot.settlements)
+        {
+            out << (first ? "" : ",") << "{\"id\":" << Quote(town.id)
+                << ",\"name\":" << Quote(Utf8(town.name)) << ",\"metrics\":";
+            Metrics(out, town.metrics);
+            out << '}';
+            first = false;
+        }
+        out << "],\"entities\":[";
+        first = true;
+        for (const auto& entity : snapshot.entities)
+        {
+            out << (first ? "" : ",") << "{\"id\":" << Quote(entity.id)
+                << ",\"name\":" << Quote(Utf8(entity.name)) << ",\"kind\":" << Quote(entity.kind)
+                << ",\"settlement_id\":"
+                << (entity.settlementId.empty() ? "null" : Quote(entity.settlementId))
+                << ",\"role\":" << Quote(entity.role) << ",\"action\":" << Quote(entity.action)
+                << ",\"action_label\":" << Quote(Utf8(entity.actionLabel))
+                << ",\"target_id\":" << (entity.targetId.empty() ? "null" : Quote(entity.targetId))
+                << ",\"position\":{\"x\":" << entity.x << ",\"y\":" << entity.y << "},\"health\":";
+            Number(out, entity.health, entity.health < 0);
+            out << ",\"max_health\":";
+            Number(out, entity.maxHealth, entity.maxHealth < 0);
+            out << ",\"alive\":" << entity.alive << ",\"active\":" << entity.active
+                << ",\"visible\":" << entity.visible << ",\"hostile\":" << entity.hostile
+                << ",\"metrics\":";
+            Metrics(out, entity.metrics);
+            out << ",\"personality\":";
+            Metrics(out, entity.personality);
+            out << '}';
+            first = false;
+        }
+        out << "]}";
+        return out.str();
+    }
+
     struct Client
     {
-        std::string worldId, instanceId, pending;
+        std::string worldId, instanceId;
+        std::unique_ptr<WorldMonitor::Snapshot> pending;
         std::uint64_t sequence = 0;
         std::mutex mutex;
         std::condition_variable changed;
@@ -184,7 +239,8 @@ namespace
         std::atomic<std::uint64_t> sent{0}, failed{0};
         std::uint64_t reportedSent = 0, reportedFailed = 0;
         std::atomic<int> lastStatus{0};
-        std::atomic<double> lastSendMs{0};
+        std::atomic<double> lastSendMs{0}, lastSerializeMs{0};
+        std::atomic<std::uint64_t> serializedBytes{0}, oversized{0};
 
         explicit Client(const std::string& world) : worldId(world)
         {
@@ -200,20 +256,42 @@ namespace
                 {
                     for (;;)
                     {
-                        std::string body;
+                        std::unique_ptr<WorldMonitor::Snapshot> snapshot;
                         {
                             std::unique_lock<std::mutex> lock(mutex);
                             changed.wait(lock,
                                          [this]
                                          {
-                                             return stopping || !pending.empty();
+                                             return stopping || pending != nullptr;
                                          });
                             if (stopping)
                             {
                                 return;
                             }
-                            body.swap(pending);
+                            snapshot = std::move(pending);
                         }
+                        const auto serializationStarted = Clock::now();
+                        std::string body;
+                        try
+                        {
+                            body = Serialize(*snapshot, worldId, instanceId, ++sequence);
+                        }
+                        catch (...)
+                        {
+                            ++failed;
+                            lastStatus = -1;
+                            continue;
+                        }
+                        snapshot.reset();
+                        lastSerializeMs = std::chrono::duration<double, std::milli>(
+                                              Clock::now() - serializationStarted)
+                                              .count();
+                        if (body.size() > 1024 * 1024)
+                        {
+                            ++oversized;
+                            continue;
+                        }
+                        serializedBytes.fetch_add(body.size());
                         const auto started = Clock::now();
                         const bool delivered = Send(body);
                         lastSendMs =
@@ -249,7 +327,7 @@ namespace
             {
                 std::lock_guard<std::mutex> lock(mutex);
                 stopping = true;
-                pending.clear();
+                pending.reset();
             }
             changed.notify_one();
             if (worker.joinable())
@@ -284,75 +362,27 @@ bool WorldMonitor::IsDue()
     return true;
 }
 
-void WorldMonitor::Publish(const Snapshot& snapshot)
+bool WorldMonitor::Enabled()
+{
+    return client != nullptr;
+}
+
+void WorldMonitor::Publish(Snapshot snapshot)
 {
     if (!client)
     {
         return;
     }
-    Profiler::Scope scope("monitor.serialize");
-    std::ostringstream out;
-    out.imbue(std::locale::classic());
-    out << std::fixed << std::setprecision(3) << std::boolalpha;
-    out << "{\"schema\":\"world-monitor.v1\",\"type\":\"snapshot\",\"game_id\":\"simplegame\","
-        << "\"world_id\":" << Quote(client->worldId)
-        << ",\"instance_id\":" << Quote(client->instanceId)
-        << ",\"sequence\":" << ++client->sequence << ",\"epoch\":" << snapshot.epoch
-        << ",\"paused\":" << snapshot.paused << ",\"world_time_minutes\":";
-    Number(out, snapshot.worldMinutes, snapshot.worldMinutes < 0);
-    out << ",\"bounds\":{\"min_x\":" << snapshot.minX << ",\"min_y\":" << snapshot.minY
-        << ",\"max_x\":" << snapshot.maxX << ",\"max_y\":" << snapshot.maxY << "},\"metrics\":";
-    Metrics(out, snapshot.metrics);
-    out << ",\"settlements\":[";
-    bool first = true;
-    for (const auto& town : snapshot.settlements)
-    {
-        out << (first ? "" : ",") << "{\"id\":" << Quote(town.id)
-            << ",\"name\":" << Quote(Utf8(town.name)) << ",\"metrics\":";
-        Metrics(out, town.metrics);
-        out << '}';
-        first = false;
-    }
-    out << "],\"entities\":[";
-    first = true;
-    for (const auto& entity : snapshot.entities)
-    {
-        out << (first ? "" : ",") << "{\"id\":" << Quote(entity.id)
-            << ",\"name\":" << Quote(Utf8(entity.name)) << ",\"kind\":" << Quote(entity.kind)
-            << ",\"settlement_id\":"
-            << (entity.settlementId.empty() ? "null" : Quote(entity.settlementId))
-            << ",\"role\":" << Quote(entity.role) << ",\"action\":" << Quote(entity.action)
-            << ",\"action_label\":" << Quote(Utf8(entity.actionLabel))
-            << ",\"target_id\":" << (entity.targetId.empty() ? "null" : Quote(entity.targetId))
-            << ",\"position\":{\"x\":" << entity.x << ",\"y\":" << entity.y << "},\"health\":";
-        Number(out, entity.health, entity.health < 0);
-        out << ",\"max_health\":";
-        Number(out, entity.maxHealth, entity.maxHealth < 0);
-        out << ",\"alive\":" << entity.alive << ",\"active\":" << entity.active
-            << ",\"visible\":" << entity.visible << ",\"hostile\":" << entity.hostile
-            << ",\"metrics\":";
-        Metrics(out, entity.metrics);
-        out << ",\"personality\":";
-        Metrics(out, entity.personality);
-        out << '}';
-        first = false;
-    }
-    out << "]}";
-    std::string body = out.str();
-    if (body.size() > 1024 * 1024)
-    {
-        Profiler::Count("monitor.oversize_snapshots");
-        return;
-    }
-    Profiler::Count("monitor.snapshot_bytes", body.size());
+    Profiler::Scope scope("monitor.enqueue");
     Profiler::Gauge("monitor.entity_count", static_cast<double>(snapshot.entities.size()));
+    auto pending = std::make_unique<Snapshot>(std::move(snapshot));
     {
         std::lock_guard<std::mutex> lock(client->mutex);
-        if (!client->pending.empty())
+        if (client->pending)
         {
             Profiler::Count("monitor.coalesced_snapshots");
         }
-        client->pending = std::move(body);
+        client->pending = std::move(pending);
     }
     client->changed.notify_one();
     const auto sent = client->sent.load(), failed = client->failed.load();
@@ -360,6 +390,9 @@ void WorldMonitor::Publish(const Snapshot& snapshot)
     Profiler::Count("monitor.send_failures", failed - client->reportedFailed);
     client->reportedSent = sent;
     client->reportedFailed = failed;
+    Profiler::Count("monitor.snapshot_bytes", client->serializedBytes.exchange(0));
+    Profiler::Count("monitor.oversize_snapshots", client->oversized.exchange(0));
+    Profiler::Gauge("monitor.last_serialize_wall_ms", client->lastSerializeMs.load());
     Profiler::Gauge("monitor.last_send_status", client->lastStatus.load());
     Profiler::Gauge("monitor.last_send_wall_ms", client->lastSendMs.load());
 }

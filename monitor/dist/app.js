@@ -178,6 +178,19 @@ function render()
                              `창고 식량 ${format(m.food_stock)} · 사기 ${format(m.morale)} · 치안 ${
                                  format(m.security)}`,
                              "muted"));
+        if (m.mood_calm != null)
+        {
+            panel.append(element("p",
+                                 `분위기 (0–100): 평온 ${format(m.mood_calm)} · 불안 ${
+                                     format(m.mood_anxiety)} · 애도 ${
+                                     format(m.mood_grief)} · 적대 ${format(m.mood_hostility)}`));
+            panel.append(
+                element("p",
+                        `현장 NPC ${format(m.npcs_present)} · 주민 정원 ${
+                            format(m.npc_capacity)} · 공유된 소문 ${
+                            format(m.known_rumors)} · 최근 사건 ${format(m.recent_incidents)}`,
+                        "muted"));
+        }
         panel.append(element(
             "p", `오염 ${format(m.aether_pollution)} · 경제 지수 ${format(m.economy)}`, "muted"));
         const more = element("details"), pre = element("pre", JSON.stringify(m, null, 2));

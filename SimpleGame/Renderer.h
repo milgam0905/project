@@ -18,7 +18,7 @@ struct RenderColor
 class Renderer
 {
   public:
-    Renderer(int windowSizeX, int windowSizeY);
+    Renderer(int windowSizeX, int windowSizeY, bool proceduralAssets = true);
     ~Renderer();
     bool IsInitialized() const;
     bool HasPostProcessing() const;

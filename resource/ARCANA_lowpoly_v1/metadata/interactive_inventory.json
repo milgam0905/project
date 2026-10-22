@@ -1,0 +1,16 @@
+[
+  {
+    "id": "door_rigged",
+    "category": "interactive",
+    "path": "environment/door_rigged.glb",
+    "triangles": 480,
+    "meshes": 1
+  },
+  {
+    "id": "chest_rigged",
+    "category": "interactive",
+    "path": "environment/chest_rigged.glb",
+    "triangles": 164,
+    "meshes": 2
+  }
+]
