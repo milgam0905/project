@@ -4,6 +4,11 @@
 *.ipch
 /SimpleGame/x64/
 /x64/*/assets/
+/x64/*/licenses/
+/Debug/assets/
+/Debug/licenses/
+/Release/assets/
+/Release/licenses/
 *.exe
 *.obj
 *.pch

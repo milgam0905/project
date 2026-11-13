@@ -79,7 +79,7 @@ profile_window.phase:
 
 fps:
   집계 구간에 완료한 렌더 프레임 수 / 실제 경과 초.
-  16ms GLUT 타이머와 swap/VSync 대기 영향을 포함한다.
+  GLFW의 16ms 업데이트 예약 및 이벤트 대기, swap/VSync 대기 영향을 포함한다.
   약 60 FPS가 유지된다는 이유만으로 최적화 효과가 없다고 판단하면 안 된다.
 
 frame_interval_ms / frame_interval_p95_ms:
@@ -88,8 +88,12 @@ frame_interval_ms / frame_interval_p95_ms:
 
 render_and_swap_cpu_ms:
   BeginFrame부터 swap 완료까지 CPU에서 관찰한 벽시계 시간.
-  별도 GLUT Update 콜백 실행 시간은 이 값에 포함되지 않는다.
+  GLFW 루프의 별도 게임 업데이트 실행 시간은 이 값에 포함되지 않는다.
   GPU query poll/간격 spike 로그 비용은 들어갈 수 있다.
+
+loop.event_wait:
+  GLFW 이벤트 대기와 그 안에서 처리된 콜백의 벽시계 ms. 예약일까지 잠든 시간이
+  포함되므로 CPU 계산 시간 또는 렌더링 비용에 더하지 않는다.
 
 draw_calls_per_frame:
   GPU 제출 단위의 실제 API 호출 수(glDrawElements + fullscreen glBegin).
@@ -399,3 +403,37 @@ GLB 스킨 계산·방향 투영·텍스처 디코드는 오프라인 캐시 생
 게임은 PNG 페이지를 시작 시 한 번 로드하고 SceneGraph 순서 그대로 RenderQueue에 제출한다.
 스프라이트 제출량, batch.split_texture, GPU render.world 및 scene.sort를 변경 전후 비교한다.
 빌드·게임 실행·FPS 개선 측정은 수행하지 않았다.
+
+15. 화면 하단 알림
+
+ui.notifications_submit: 살아 있는 알림의 줄바꿈/페이드/화면 제출 CPU ms.
+ui.notifications_added / notifications_expired: 등록/5초 만료 건수.
+ui.notifications_filtered: 시뮬레이션 진단 등 화면 표시에서 제외한 건수.
+ui.notifications_duplicates: 이미 표시 중인 같은 문구를 억제한 건수. 표시 시간은 연장하지 않는다.
+ui.notifications_visible: 마지막 화면 제출 시 활성 메시지 수, 최대 3개.
+수명은 steady_clock 실제 시간 5초이며 마지막 0.5초는 페이드한다. 일시정지에도 만료된다.
+빈 알림 패널은 그리지 않는다. 콘솔 성능 로그/사건 기억/모니터링 데이터는 이 필터와 무관하다.
+
+글꼴 원본 높이는 23px, 알림 배율은 0.75(논리 화면 약 17px)다.
+원본 글리프에서 반경 1px의 검은 외곽선을 생성해 동일 RGBA 캐시에 합성한다.
+색상 틴트와 투명도는 유지하며 외곽선 때문에 글자마다 추가 quad/draw call을 제출하지 않는다.
+text.outlined_glyph_uploads: 외곽선 포함 글리프를 생성·업로드한 횟수.
+text.font_height_source_px / text.outline_radius_source_px: 원본 글꼴 높이/외곽선 반경 px.
+외곽선 생성 CPU 시간은 기존 text.glyph_rasterize_upload에 포함한다. FPS 변화는 미측정이다.
+
+text.fallback_font_initialize: 기본 글꼴에 한글이 없을 때만 실행되는 초기화 ms.
+text.fallback_fonts_loaded / text.fallback_font_failures: 대체 글꼴 등록 및 선택 성공/실패 횟수.
+
+16. NPC 주거 및 출입
+
+housing.village_layout_build: 마을당 20채의 도로/호수/건물 여유 공간을 검사하는 초기 생성 CPU ms.
+housing.building_count: 전체 마을 주택 수(현재 100채).
+housing.assign_homes: 시드 생성 시 주택별 문 앞 좌표/작업 위치를 연결하는 CPU ms.
+save.layout_migrations: 기존 v2 저장을 확장 마을로 정상 불러온 횟수. 파일 쓰기는 하지 않는다.
+housing.update: 주민별 귀가/입실/퇴실 처리 CPU ms. 새 실내 청크를 렌더하는 기능은 아니다.
+housing.returns_started / housing.entries / housing.exits / housing.door_calls: 귀가 시작/입실/퇴실/문 앞 호출 횟수.
+housing.indoors_count / housing.returning_count: 생존 실내 주민/귀가 중 주민 수.
+실내 NPC는 SceneGraph 표시만 끄고 활성화/욕구/판단/생활 갱신은 유지한다.
+실내 개체는 야외 공간 탐색·관측·피격·소문 접촉·미니맵에서 제외한다.
+기존 지표 scene.hidden_or_culled, render.world, lena.observe 및 housing.update를 함께 비교한다.
+실제 FPS 개선과 주민 출입 화면은 측정/실행으로 확인하지 않았다.

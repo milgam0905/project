@@ -155,19 +155,7 @@ namespace Lena
         houses = {{-6, 0}, {5, 1}, {-5, 8}, {5, 9}, {-9, 15}, {0, 16}, {9, 17}, {-13, 5}};
         if (arcanaMode)
         {
-            houses.clear();
-            for (const auto& village : Arcana::Villages())
-            {
-                for (auto offset : {RenderPoint{-6, 0},
-                                    RenderPoint{6, 0},
-                                    RenderPoint{0, -6},
-                                    RenderPoint{0, 6},
-                                    RenderPoint{-7, 3},
-                                    RenderPoint{7, -3}})
-                {
-                    houses.push_back({village.center.x + offset.x, village.center.y + offset.y});
-                }
-            }
+            Arcana::BuildVillageHouses(*this);
         }
         if (arcanaMode)
         {
@@ -185,7 +173,7 @@ namespace Lena
                                        std::min(1.f,
                                                 ((p.x - a.x) * dx + (p.y - a.y) * dy) /
                                                     std::max(1.f, dx * dx + dy * dy)));
-                    clear = clear || Distance(p, village.center) < 10 ||
+                    clear = clear || Distance(p, village.center) < Arcana::VillageRadius + 1 ||
                             Distance(p, {a.x + dx * t, a.y + dy * t}) < 2;
                 }
                 if (!clear)
@@ -595,7 +583,7 @@ namespace Lena
         for (auto id : people)
         {
             auto* p = Find(id);
-            if (!p)
+            if (!p || p->indoors)
             {
                 continue;
             }
@@ -621,7 +609,7 @@ namespace Lena
                 for (auto id : buckets[y * bucketSide + x])
                 {
                     const auto* other = Find(id);
-                    if (other && Distance(p, other->Position()) <= radius)
+                    if (other && !other->indoors && Distance(p, other->Position()) <= radius)
                     {
                         result.push_back(id);
                     }
@@ -633,13 +621,39 @@ namespace Lena
         return result;
     }
 
-    void World::Log(const std::wstring& text)
+    void World::ExpireMessages(Message::Clock::time_point now)
     {
-        messages.push_back(text);
-        if (messages.size() > 7)
+        while (!messages.empty() && now - messages.front().created >= std::chrono::seconds(5))
+        {
+            messages.pop_front();
+            Profiler::Count("ui.notifications_expired");
+        }
+    }
+
+    void World::Log(const std::wstring& text, MessageKind kind)
+    {
+        if (kind == MessageKind::Simulation || text.empty())
+        {
+            Profiler::Count("ui.notifications_filtered");
+            return;
+        }
+        const auto now = Message::Clock::now();
+        ExpireMessages(now);
+        for (const auto& message : messages)
+        {
+            if (message.text == text)
+            {
+                // Holding an interaction key must not keep an old notification alive forever.
+                Profiler::Count("ui.notifications_duplicates");
+                return;
+            }
+        }
+        messages.push_back({text, kind, now});
+        if (messages.size() > 3)
         {
             messages.pop_front();
         }
+        Profiler::Count("ui.notifications_added");
     }
 
     void World::SetAction(Person& p, Action action, Actor::Id target)
@@ -674,6 +688,10 @@ namespace Lena
 
     void World::Observe(Person& p)
     {
+        if (p.indoors)
+        {
+            return;
+        }
         Profiler::Scope scope("lena.observe");
         Profiler::Count("perception.facts_examined", facts.size());
         for (const auto& fact : facts)
@@ -684,6 +702,10 @@ namespace Lena
                 continue;
             }
             const auto* currentVictim = Find(fact.victim);
+            if (currentVictim && currentVictim->indoors)
+            {
+                continue;
+            }
             if (arcana && fact.death && currentVictim &&
                 currentVictim->state.generation != fact.victimGeneration)
             {
@@ -732,7 +754,7 @@ namespace Lena
     void World::Damage(Person& a, Person& b, float amount, bool intentional)
     {
         Profiler::Scope scope("lena.damage_transaction");
-        if (a.state.dead || b.state.dead ||
+        if (a.state.dead || b.state.dead || (&a != &b && (a.indoors || b.indoors)) ||
             (&a != &b && (a.state.surrendered || b.state.surrendered && Civilian(a))))
         {
             return;
@@ -777,6 +799,8 @@ namespace Lena
             return;
         }
         b.state.dead = true;
+        b.outdoorVisitSeconds = 0;
+        b.returningHome = false;
         b.state.target = 0;
         b.state.report = 0;
         b.path.clear();
@@ -791,8 +815,10 @@ namespace Lena
             gameOver = true;
         }
         Log(b.displayName + L" 사망 — " +
-            (&a == &b ? L"누적된 결핍과 노출"
-                      : a.displayName + (intentional ? L"의 사냥 마무리" : L"의 공격으로 치명상")));
+                (&a == &b
+                     ? L"누적된 결핍과 노출"
+                     : a.displayName + (intentional ? L"의 사냥 마무리" : L"의 공격으로 치명상")),
+            b.GetId() == playerId ? MessageKind::Notice : MessageKind::Simulation);
         Profiler::Count("lena.deaths");
     }
 
@@ -912,7 +938,8 @@ namespace Lena
             {
                 s.surrendered = true;
                 SetAction(p, Action::Surrender);
-                Log(p.displayName + L": 항복한다! 더는 싸우지 않겠다.");
+                Log(p.displayName + L": 항복한다! 더는 싸우지 않겠다.",
+                    threat->GetId() == playerId ? MessageKind::Dialogue : MessageKind::Simulation);
                 return;
             }
             bool fight = Guard(p) || p.role == Role::Bandit && p.traits[0] > 65 ||
@@ -1003,8 +1030,16 @@ namespace Lena
 
     void World::Act(Person& p, float dt)
     {
+        if (arcana && arcana->ManageHousing(p, dt))
+        {
+            return;
+        }
         auto& s = p.state;
         auto* target = Find(s.target);
+        if (target && target->indoors)
+        {
+            target = nullptr;
+        }
         float speed = p.beast                      ? 1.4f
                       : p.species == Species::Deer ? 3.8f
                       : p.species == Species::Wolf ? 3.5f
@@ -1209,7 +1244,8 @@ namespace Lena
                 fact.position = p.Position();
                 fact.crime = true;
                 facts.push_back(fact);
-                Log(p.displayName + L"이 식량을 훔쳤다. 목격·신고 여부는 별도다.");
+                Log(p.displayName + L"이 식량을 훔쳤다. 목격·신고 여부는 별도다.",
+                    target->GetId() == playerId ? MessageKind::Notice : MessageKind::Simulation);
                 SetAction(p, Action::Flee, target->GetId());
                 Profiler::Count("lena.theft_transactions");
             }
@@ -1223,7 +1259,7 @@ namespace Lena
                 for (auto id : people)
                 {
                     auto* other = Find(id);
-                    if (Alive(other) && Guard(*other))
+                    if (Alive(other) && !other->indoors && Guard(*other))
                     {
                         receiver = other;
                         break;
@@ -1252,7 +1288,8 @@ namespace Lena
                         auto& local = arcana ? arcana->Town(receiver->settlement) : town;
                         local.security = std::max(0.0, local.security - 2);
                     }
-                    Log(p.displayName + L"의 신고가 경비에게 도착했다. 조사 기록이 남았다.");
+                    Log(p.displayName + L"의 신고가 경비에게 도착했다. 조사 기록이 남았다.",
+                        MessageKind::Simulation);
                     Profiler::Count("lena.reports_received");
                 }
             }
@@ -1295,7 +1332,8 @@ namespace Lena
             for (auto id : Nearby(p.Position(), 2))
             {
                 auto* guard = Find(id);
-                if (Alive(guard) && Guard(*guard) && Visible(p.Position(), guard->Position()))
+                if (Alive(guard) && !guard->indoors && Guard(*guard) &&
+                    Visible(p.Position(), guard->Position()))
                 {
                     s.detained = true;
                 }
@@ -1304,7 +1342,7 @@ namespace Lena
         case Action::Work:
         {
             double hour = std::fmod(minutes / 60 + 6, 24);
-            RenderPoint location = hour >= 20 || hour < 6 ? p.home : p.work;
+            RenderPoint location = !arcana && (hour >= 20 || hour < 6) ? p.home : p.work;
             approach(location);
             break;
         }
@@ -1511,6 +1549,7 @@ namespace Lena
                 continue;
             }
             auto& s = p->state;
+            p->outdoorVisitSeconds = std::max(0.f, p->outdoorVisitSeconds - dt);
             s.cooldown = std::max(0.f, s.cooldown - dt);
             s.threatSeconds = std::max(0.f, s.threatSeconds - dt);
             s.held += dt;
@@ -1640,6 +1679,10 @@ namespace Lena
 
     bool World::Service(Person& p)
     {
+        if (p.indoors)
+        {
+            return false;
+        }
         if (p.state.dead)
         {
             if (p.state.food + p.state.coins + p.state.medicine <= 0)
@@ -1650,7 +1693,8 @@ namespace Lena
             Player().state.coins += p.state.coins;
             Player().state.medicine += p.state.medicine;
             p.state.food = p.state.coins = p.state.medicine = 0;
-            Log(p.displayName + L"의 유품을 수거했다. 죽음은 되돌아가지 않는다.");
+            Log(p.displayName + L"의 유품을 수거했다. 죽음은 되돌아가지 않는다.",
+                MessageKind::Item);
             return true;
         }
         if (p.state.surrendered || !p.IsActive())
@@ -1672,7 +1716,8 @@ namespace Lena
             Player().state.coins -= 2;
             p.state.coins += 2;
             Profiler::Count("lena.trade_transactions");
-            Log(p.displayName + L"에게 은화 2개를 지불하고 식량 1배급을 받았다.");
+            Log(p.displayName + L"에게 은화 2개를 지불하고 식량 1배급을 받았다.",
+                MessageKind::Item);
             return true;
         }
         return false;
@@ -1880,7 +1925,7 @@ namespace Lena
 
         std::ofstream out((file + L".tmp").c_str(), std::ios::binary | std::ios::trunc);
         out.imbue(std::locale::classic());
-        out << std::setprecision(17) << (arcana ? "ARCANA_SAVE_2\n" : "LENA_SAVE_1\n");
+        out << std::setprecision(17) << (arcana ? "ARCANA_SAVE_3\n" : "LENA_SAVE_1\n");
         out << minutes << ' ' << tick << ' ' << factSequence << ' ' << economyMinute << ' '
             << prologue << ' ' << investigation << ' ' << prologueStarted << ' ' << waterClue << ' '
             << forestClue << ' ' << escorted << ' ' << hunting << ' ' << corridor << ' '
@@ -1934,6 +1979,12 @@ namespace Lena
         if (arcana)
         {
             arcana->Write(out);
+            out << "ARCANA_HOUSING_1 " << people.size() << '\n';
+            for (auto id : people)
+            {
+                const auto* p = Find(id);
+                out << p->key << ' ' << p->indoors << ' ' << p->outdoorVisitSeconds << '\n';
+            }
         }
         out.flush();
         const auto size = out.tellp();
@@ -1966,10 +2017,24 @@ namespace Lena
         in.seekg(0);
         std::string version;
         in >> version;
-        if (version != (arcana ? "ARCANA_SAVE_2" : "LENA_SAVE_1"))
+        const bool legacyLayout = arcana && version == "ARCANA_SAVE_2";
+        if (version != (arcana ? "ARCANA_SAVE_3" : "LENA_SAVE_1") && !legacyLayout)
         {
             return false;
         }
+        auto restorePosition = [&](RenderPoint& position)
+        {
+            if (!std::isfinite(position.x) || !std::isfinite(position.y) ||
+                std::abs(position.x) > extent || std::abs(position.y) > extent)
+            {
+                return false;
+            }
+            if (legacyLayout && !Walkable(position))
+            {
+                position = Safe(position);
+            }
+            return Walkable(position);
+        };
         // Parse into temporary storage. Invalid saves must never partially change the live world.
         double savedMinutes, savedEconomy, savedStarted, savedWork;
         std::uint64_t savedTick, savedSequence;
@@ -2033,13 +2098,16 @@ namespace Lena
                 s.target >> s.aggressor >> s.report >> s.destination.x >> s.destination.y >>
                 knownCount;
             if (!in || key != Find(people[i])->key || knownCount > 100000 || action < 3 ||
-                action > 39 || !std::isfinite(positions[i].x) || !std::isfinite(positions[i].y) ||
-                !Walkable(positions[i]) || !std::isfinite(s.destination.x) ||
+                action > 39 || !restorePosition(positions[i]) || !std::isfinite(s.destination.x) ||
                 !std::isfinite(s.destination.y) || std::abs(s.destination.x) > extent ||
                 std::abs(s.destination.y) > extent || (s.target && !Find(s.target)) ||
                 (s.aggressor && !Find(s.aggressor)))
             {
                 return false;
+            }
+            if (legacyLayout)
+            {
+                s.destination = Safe(s.destination);
             }
             for (float value :
                  {s.hunger, s.thirst, s.fatigue, s.fear, s.grief, s.anger, s.exposure})
@@ -2089,7 +2157,7 @@ namespace Lena
                     s.deathMinute > savedMinutes || s.generation > 1000000 ||
                     (s.generation && !Find(people[i])->beast) || s.travelTown < -1 ||
                     s.travelTown > 4 || !finite(s.travelWait) || s.travelWait > 30 ||
-                    !Walkable(s.habitat) ||
+                    !restorePosition(s.habitat) ||
                     (s.absorbed && (!s.dead || !s.playerCredit || !Find(people[i])->beast)))
                 {
                     return false;
@@ -2120,8 +2188,7 @@ namespace Lena
             }
             if (!in || !f.id || f.id > savedSequence || !factIds.insert(f.id).second ||
                 !Find(f.actor) || !Find(f.victim) || !finite(f.minute) || f.minute > savedMinutes ||
-                !std::isfinite(f.position.x) || !std::isfinite(f.position.y) ||
-                !Walkable(f.position))
+                !restorePosition(f.position))
             {
                 return false;
             }
@@ -2149,7 +2216,7 @@ namespace Lena
             }
         }
         Arcana::Progress arcanaProgress;
-        if (arcana && !arcana->Read(in, arcanaProgress, savedMinutes))
+        if (arcana && !arcana->Read(in, arcanaProgress, savedMinutes, legacyLayout))
         {
             return false;
         }
@@ -2163,6 +2230,45 @@ namespace Lena
         }
         const auto playerIndex =
             static_cast<size_t>(std::find(people.begin(), people.end(), playerId) - people.begin());
+        std::vector<bool> indoorStates(count, false);
+        std::vector<float> visitSeconds(count, 0);
+        in >> std::ws;
+        // Older v2 files may predate the housing extension.
+        if (arcana && !legacyLayout && in.eof())
+        {
+            return false;
+        }
+        if (arcana && !in.eof())
+        {
+            std::string tag;
+            size_t residents = 0;
+            in >> tag >> residents;
+            if (!in || tag != "ARCANA_HOUSING_1" || residents != count)
+            {
+                return false;
+            }
+            for (size_t i = 0; i < count; ++i)
+            {
+                std::string key;
+                bool indoors = false;
+                float visit = 0;
+                in >> key >> indoors >> visit;
+                const auto* p = Find(people[i]);
+                if (!in || key != p->key || !std::isfinite(visit) || visit < 0 || visit > 10 ||
+                    (indoors && (p->household < 0 ||
+                                 (!legacyLayout && Distance(positions[i], p->home) > .46f))) ||
+                    (visit > 0 && (p->household < 0 || states[i].dead || indoors)))
+                {
+                    return false;
+                }
+                indoorStates[i] = indoors;
+                visitSeconds[i] = visit;
+                if (legacyLayout && indoors)
+                {
+                    positions[i] = p->home;
+                }
+            }
+        }
         in >> std::ws;
         if (!in.eof() || playerIndex >= states.size() || savedOver != states[playerIndex].dead)
         {
@@ -2182,6 +2288,10 @@ namespace Lena
             p->routeTimer = 0;
             p->sightTimer = 0;
             p->motionSeconds = 0;
+            p->indoors = indoorStates[i];
+            p->outdoorVisitSeconds = visitSeconds[i];
+            p->returningHome = false;
+            p->SetVisible(!p->indoors);
         }
         minutes = savedMinutes;
         tick = savedTick;
@@ -2209,6 +2319,10 @@ namespace Lena
         observationCredits = 0;
         epoch = WorldMonitor::NextEpoch();
         RebuildIndex();
+        if (legacyLayout)
+        {
+            Profiler::Count("save.layout_migrations");
+        }
         Log(L"세계 전체 상태를 불러왔습니다. 사망·자원·기억·선택 결과도 함께 복원됩니다.");
         return true;
     }

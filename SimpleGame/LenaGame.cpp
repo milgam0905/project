@@ -33,17 +33,20 @@ namespace
         RenderQueue::End();
     }
 
-    std::wstring SavePath(bool arcanaMode)
+    std::wstring SavePath(bool arcanaMode, bool legacyArcana = false)
     {
+        const std::wstring name =
+            arcanaMode ? (legacyArcana ? L"arcana-save-v2.txt" : L"arcana-save-v3.txt")
+                       : L"lena-save-v1.txt";
         wchar_t root[MAX_PATH];
         DWORD count = GetEnvironmentVariableW(L"LOCALAPPDATA", root, MAX_PATH);
         if (!count || count >= MAX_PATH)
         {
-            return arcanaMode ? L"arcana-save-v2.txt" : L"lena-save-v1.txt";
+            return name;
         }
         std::wstring directory = std::wstring(root) + L"\\SimpleGame";
         CreateDirectoryW(directory.c_str(), nullptr);
-        return directory + (arcanaMode ? L"\\arcana-save-v2.txt" : L"\\lena-save-v1.txt");
+        return directory + L"\\" + name;
     }
 } // namespace
 
@@ -147,12 +150,32 @@ struct LenaGame::Impl
         {
             auto& house = world.scene.Spawn(world.scene.Root(), "LenaHouse");
             house.SetPosition(position);
+            const int household = variant;
             const int palette = variant++ % 8;
-            house.onDraw = [this, palette](const Actor& actor, const SceneView& view)
+            house.onDraw = [this, palette, household](const Actor& actor, const SceneView& view)
             {
                 if (world.arcana)
                 {
                     resources.Draw("prefab_cottage", view.Screen(actor), 28.f);
+                    if (Lena::Distance(world.Player().Position(), actor.Position()) < 4)
+                    {
+                        for (auto id : world.people)
+                        {
+                            const auto* resident = world.Find(id);
+                            if (resident && resident->household == household && resident->indoors &&
+                                !resident->state.dead &&
+                                Lena::Distance(world.Player().Position(), resident->home) < 2)
+                            {
+                                const auto p = view.Screen(resident->home);
+                                text.Draw(p.x - 32,
+                                          p.y + 10,
+                                          L"[E] 주민 부르기",
+                                          C(.94f, .82f, .54f),
+                                          .65f);
+                                break;
+                            }
+                        }
+                    }
                 }
                 else
                 {
@@ -512,7 +535,7 @@ struct LenaGame::Impl
         for (auto id : world.people)
         {
             const auto* p = world.Find(id);
-            if (p && !p->state.dead && p->role != Lena::Role::Player &&
+            if (p && !p->indoors && !p->state.dead && p->role != Lena::Role::Player &&
                 (p->species == Lena::Species::Human || p->beast))
             {
                 mark(p->Position(), p->beast ? C(.95f, .2f, .2f) : C(.3f, .85f, .6f), 2);
@@ -620,6 +643,50 @@ struct LenaGame::Impl
         }
     }
 
+    void DrawNotifications(float bottom = 782.f)
+    {
+        Profiler::Scope scope("ui.notifications_submit");
+        constexpr size_t Columns = 60;
+        constexpr float LineHeight = 28.f;
+        constexpr float FontScale = .75f;
+        const auto now = Lena::Message::Clock::now();
+        world.ExpireMessages(now);
+        Profiler::Gauge("ui.notifications_visible", static_cast<double>(world.messages.size()));
+
+        struct Row
+        {
+            std::wstring text;
+            Color color;
+        };
+
+        std::vector<Row> rows;
+        for (const auto& message : world.messages)
+        {
+            const float age = std::chrono::duration<float>(now - message.created).count();
+            const float opacity = std::clamp((5.f - age) / .5f, 0.f, 1.f);
+            const bool highlight =
+                message.kind == Lena::MessageKind::Item || message.kind == Lena::MessageKind::Quest;
+            const Color color =
+                highlight ? C(.94f, .82f, .54f, opacity) : C(.88f, .89f, .85f, opacity);
+            size_t start = 0;
+            while (start < message.text.size())
+            {
+                const auto newline = message.text.find(L'\n', start);
+                const auto end = std::min(std::min(start + Columns, message.text.size()), newline);
+                rows.push_back({message.text.substr(start, end - start), color});
+                start = end + (end == newline ? 1 : 0);
+            }
+        }
+        float y = bottom - static_cast<float>(rows.size()) * LineHeight;
+        for (const auto& row : rows)
+        {
+            // No fixed empty panel: only live rows cover a small strip of the viewport.
+            Box(18, y - 3, 1120, LineHeight, C(.025f, .04f, .05f, .68f * row.color.a));
+            text.Draw(34, y, row.text, row.color, FontScale);
+            y += LineHeight;
+        }
+    }
+
     void Hud()
     {
         Profiler::Scope scope("lena.hud");
@@ -682,10 +749,10 @@ struct LenaGame::Impl
         marker(world.board, gold, 6);
         marker(world.forest, C(.5f, .85f, .4f), 6);
         text.Draw(995, 312, L"청록: 수로 / 금색: 게시판 / 연두: 숲", ink, .57f);
-        Box(18, 550, 1060, 232, C(.025f, .05f, .055f, .91f));
+        Box(18, 740, 1060, 42, C(.025f, .05f, .055f, .75f));
         int clock = (360 + static_cast<int>(world.minutes)) % 1440;
         text.Draw(34,
-                  559,
+                  749,
                   L"HP " + std::to_wstring(static_cast<int>(world.Player().state.health)) +
                       L"   시각 " + std::to_wstring(clock / 60) + L":" +
                       std::to_wstring(clock % 60) + L"   식량 " +
@@ -694,12 +761,7 @@ struct LenaGame::Impl
                       std::to_wstring(world.Population(Lena::Species::Deer)),
                   gold,
                   .85f);
-        float y = 596;
-        for (const auto& line : world.messages)
-        {
-            text.Draw(34, y, line, ink, .70f);
-            y += 24;
-        }
+        DrawNotifications(730.f);
         if (help || world.gameOver)
         {
             Box(215, 178, 830, 350, C(.02f, .035f, .045f, .98f));
@@ -759,19 +821,7 @@ struct LenaGame::Impl
         text.Draw(
             34, 138, L"WASD 이동 · E 조사/흡수 · F 화염 · SPACE 공격 · Q 대장간 휴식", ink, .72f);
         DrawMinimap();
-        Box(18, 550, 1244, 232, C(.025f, .04f, .05f, .94f));
-        text.Draw(
-            34,
-            559,
-            L"K 저장 · L 불러오기 · H 일시정지 · R 새 게임 | 지식은 효율, 마수 흡수는 최대 마력",
-            gold,
-            .8f);
-        float y = 596;
-        for (const auto& line : world.messages)
-        {
-            text.Draw(34, y, line, ink, .67f);
-            y += 24;
-        }
+        DrawNotifications();
         if (help || world.gameOver)
         {
             Box(170, 180, 930, 345, C(.02f, .03f, .04f, .99f));
@@ -805,7 +855,7 @@ struct LenaGame::Impl
                       .78f);
             text.Draw(198,
                       427,
-                      L"저장: LOCALAPPDATA / SimpleGame / arcana-save-v2.txt (확장 월드 전용)",
+                      L"K 저장 · L 불러오기 · H 일시정지 · R 새 게임 (arcana-save-v3.txt)",
                       ink,
                       .7f);
             text.Draw(
@@ -929,13 +979,27 @@ void LenaGame::KeyDown(unsigned char key)
     }
     if (key == 'l')
     {
-        bool ok = m->world.Load(m->savePath);
+        std::wstring loadPath = m->savePath;
+        const DWORD attributes = GetFileAttributesW(loadPath.c_str());
+        const DWORD error = attributes == INVALID_FILE_ATTRIBUTES ? GetLastError() : ERROR_SUCCESS;
+        const bool legacy = m->world.arcana && attributes == INVALID_FILE_ATTRIBUTES &&
+                            (error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND);
+        if (legacy)
+        {
+            loadPath = SavePath(true, true);
+        }
+        bool ok = m->world.Load(loadPath);
         if (!ok)
         {
             m->world.Log(L"불러오기 실패: 파일 없음 또는 규격 오류. 현재 세계는 보존됩니다.");
         }
         else
         {
+            if (legacy)
+            {
+                m->world.Log(
+                    L"이전 저장을 확장 마을에 맞춰 불러왔습니다. K로 저장하면 v3에 기록됩니다.");
+            }
             m->camera = WorldGeometry::Project(m->world.Player().Position());
             m->monitorSnapshot = {};
             m->monitorCursor = 0;

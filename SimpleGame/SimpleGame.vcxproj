@@ -98,8 +98,6 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>.\Dependencies;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);opengl32.lib;freeglut.lib;glew32.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -113,8 +111,6 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>.\Dependencies\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);freeglut.lib;glew32.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -132,8 +128,6 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>.\Dependencies;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);freeglut.lib;glew32.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -151,17 +145,19 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);freeglut.lib;glew32.lib;</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\Dependencies\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)ArcanaSqlite;$(ProjectDir)..\docs\ARCANA_module\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <RuntimeLibrary Condition="'$(Configuration)'=='Debug'">MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary Condition="'$(Configuration)'=='Release'">MultiThreaded</RuntimeLibrary>
+      <PreprocessorDefinitions>GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)ArcanaSqlite;$(ProjectDir)..\docs\ARCANA_module\include;$(ProjectDir)..\third_party\glfw\include;$(ProjectDir)..\third_party\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>winsqlite3.lib;winhttp.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;gdi32.lib;user32.lib;shell32.lib;ole32.lib;windowscodecs.lib;winsqlite3.lib;winhttp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -172,6 +168,7 @@
     <Text Include="..\docs\VILLAGE_TEST.md" />
     <Text Include="..\docs\LENA_START_MAP.md" />
     <Text Include="..\docs\ARCANA_INTEGRATION.md" />
+    <Text Include="..\docs\WINDOWS_BUILD.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Renderer.h" />
@@ -218,6 +215,10 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
+    <ClCompile Include="ArcanaHousing.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
     <ClCompile Include="ArcanaNative.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
@@ -256,6 +257,40 @@
     <None Include="Shaders\SolidRect.fs" />
     <None Include="Shaders\SolidRect.vs" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Same Windows source list as the upstream GLFW CMake target. -->
+    <ClCompile Include="..\third_party\glfw\src\context.c;
+                        ..\third_party\glfw\src\init.c;
+                        ..\third_party\glfw\src\input.c;
+                        ..\third_party\glfw\src\monitor.c;
+                        ..\third_party\glfw\src\platform.c;
+                        ..\third_party\glfw\src\vulkan.c;
+                        ..\third_party\glfw\src\window.c;
+                        ..\third_party\glfw\src\egl_context.c;
+                        ..\third_party\glfw\src\osmesa_context.c;
+                        ..\third_party\glfw\src\null_init.c;
+                        ..\third_party\glfw\src\null_monitor.c;
+                        ..\third_party\glfw\src\null_window.c;
+                        ..\third_party\glfw\src\null_joystick.c;
+                        ..\third_party\glfw\src\win32_module.c;
+                        ..\third_party\glfw\src\win32_time.c;
+                        ..\third_party\glfw\src\win32_thread.c;
+                        ..\third_party\glfw\src\win32_init.c;
+                        ..\third_party\glfw\src\win32_joystick.c;
+                        ..\third_party\glfw\src\win32_monitor.c;
+                        ..\third_party\glfw\src\win32_window.c;
+                        ..\third_party\glfw\src\wgl_context.c">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions>_GLFW_WIN32;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <SDLCheck>false</SDLCheck>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glew\src\glew.c">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>false</SDLCheck>
+    </ClCompile>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Target Name="CopyArcanaContent" AfterTargets="Build">
     <MakeDir Directories="$(OutDir)assets\arcana" />
@@ -269,6 +304,15 @@
     <Error Condition="!Exists('$(ProjectDir)..\resource\ARCANA_runtime\sprites.txt')" Text="ARCANA sprites missing. Run: python tools/bake_arcana_resources.py" />
     <MakeDir Directories="$(OutDir)assets\arcana_lowpoly" />
     <Copy SourceFiles="@(ArcanaSpriteContent)" DestinationFolder="$(OutDir)assets\arcana_lowpoly" SkipUnchangedFiles="true" />
+  </Target>
+  <Target Name="CopyThirdPartyContent" AfterTargets="Build">
+    <MakeDir Directories="$(OutDir)assets\fonts;$(OutDir)licenses\glfw;$(OutDir)licenses\glew" />
+    <Copy SourceFiles="$(ProjectDir)..\resource\fonts\NotoSansCJKkr-Regular.otf;$(ProjectDir)..\resource\fonts\OFL.txt"
+          DestinationFolder="$(OutDir)assets\fonts" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(ProjectDir)..\third_party\glfw\LICENSE.md"
+          DestinationFolder="$(OutDir)licenses\glfw" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(ProjectDir)..\third_party\glew\LICENSE.txt"
+          DestinationFolder="$(OutDir)licenses\glew" SkipUnchangedFiles="true" />
   </Target>
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -337,7 +337,6 @@ namespace Arcana
                 auto id = add(entity, {center.x + i % 5 - 2, center.y + i / 5 - 1}, role, v);
                 auto* p = world.Find(id);
                 p->courier = i >= 18;
-                p->work = world.Safe({center.x - 2 + i % 5, center.y - 3});
                 p->state.food = 1;
                 Town(v).food = std::max(0.0, Town(v).food - 1);
                 if (role == Role::Healer)
@@ -406,9 +405,12 @@ namespace Arcana
                 town.food -= stock;
             }
         }
+        AssignHomes();
         world.RebuildIndex();
-        world.Log(L"아르카나 : ARCANA — 다섯 마을과 숲길. 소식은 사람의 발로 전해진다.");
-        world.Log(L"[E] 불탄 집 조사. 중앙 벨하임에서 네 마을로 이어지는 도로를 이용하세요.");
+        world.Log(L"아르카나 : ARCANA — 다섯 마을과 숲길. 소식은 사람의 발로 전해진다.",
+                  Lena::MessageKind::Simulation);
+        world.Log(L"[E] 불탄 집 조사. 중앙 벨하임에서 네 마을로 이어지는 도로를 이용하세요.",
+                  Lena::MessageKind::Simulation);
     }
 
     Lena::Person* Module::Named(const std::string& id) const
@@ -443,8 +445,11 @@ namespace Arcana
         };
         auto& s = p.state;
         offer(Action::Idle, nullptr, 0);
-        offer(Action::Wander, nullptr, 5);
-        if (p.species == Species::Human && p.role != Role::Bandit)
+        if (p.species != Species::Human)
+        {
+            offer(Action::Wander, nullptr, 5);
+        }
+        if (p.species == Species::Human && p.role != Role::Bandit && WorkDue(p))
         {
             offer(Action::Work, nullptr, 25);
         }
@@ -490,6 +495,16 @@ namespace Arcana
                 offer(Action::Idle, nullptr, 45);
             }
         }
+        if (p.outdoorVisitSeconds > 0 && !s.detained && !s.surrendered)
+        {
+            offer(Action::Talk, &world.Player(), 120);
+        }
+        if (p.indoors && s.hunger > 45 && s.food < 1 && s.coins >= 2)
+        {
+            const auto center = Villages()[p.settlement].center;
+            s.destination = world.Safe({center.x + 3, center.y + 2});
+            offer(Action::Travel, nullptr, s.hunger + 12);
+        }
         bool emergency = false;
         bool leave = false;
         auto entity = definitions.at(p.key);
@@ -519,6 +534,10 @@ namespace Arcana
         }
         for (auto id : world.Nearby(p.Position(), 9))
         {
+            if (p.indoors)
+            {
+                break;
+            }
             auto* other = world.Find(id);
             if (!other || other == &p || !other->IsActive() ||
                 !world.Visible(p.Position(), other->Position()))
@@ -664,7 +683,8 @@ namespace Arcana
                     progress.dispatchPosition = world.Safe(fact.position);
                     leon->work = progress.dispatchPosition;
                     progress.dispatched = true;
-                    world.Log(L"레온이 접수된 신고의 현장으로 출동했다. 목격 전투에만 개입한다.");
+                    world.Log(L"레온이 접수된 신고의 현장으로 출동했다. 목격 전투에만 개입한다.",
+                              Lena::MessageKind::Simulation);
                     Profiler::Count("arcana.knight_dispatches");
                     break;
                 }
@@ -700,12 +720,14 @@ namespace Arcana
             {
                 ++progress.step;
                 world.Log(
-                    L"재가 된 집 — 부모의 죽음을 확인했다. 재 속에 수첩과 은빛 문장이 보인다.");
+                    L"재가 된 집 — 부모의 죽음을 확인했다. 재 속에 수첩과 은빛 문장이 보인다.",
+                    Lena::MessageKind::Quest);
             }
             else if (progress.step == 1)
             {
                 ++progress.step;
-                world.Log(L"부모의 수첩 · 은빛 문장을 획득했다. 숲길의 세르딘을 찾아가자.");
+                world.Log(L"부모의 수첩 · 은빛 문장을 획득했다. 숲길의 세르딘을 찾아가자.",
+                          Lena::MessageKind::Item);
             }
             else
             {
@@ -718,7 +740,8 @@ namespace Arcana
         {
             ++progress.step;
             world.Log(
-                L"세르딘: 그 수첩은 함부로 펼치지 마라. 벨하임의 브란이라면 풀무 그림을 읽겠지.");
+                L"세르딘: 그 수첩은 함부로 펼치지 마라. 벨하임의 브란이라면 풀무 그림을 읽겠지.",
+                Lena::MessageKind::Dialogue);
             return;
         }
         auto* bran = Named("bran_01");
@@ -729,12 +752,14 @@ namespace Arcana
                 ++progress.step;
                 world.Log(bran && !bran->state.dead
                               ? L"브란: 공기를 넣으면 불이 세진다. 신탁보다 풀무 수리비가 확실하지."
-                              : L"브란은 죽었다. 남겨진 풀무 장치의 공기 통로를 관찰했다.");
+                              : L"브란은 죽었다. 남겨진 풀무 장치의 공기 통로를 관찰했다.",
+                          Lena::MessageKind::Dialogue);
             }
             else if (progress.step == 4)
             {
                 ++progress.step;
-                world.Log(L"수첩의 도식: 연료와 공기. [F]로 풀무 앞의 화염을 시험하자.");
+                world.Log(L"수첩의 도식: 연료와 공기. [F]로 풀무 앞의 화염을 시험하자.",
+                          Lena::MessageKind::Quest);
             }
             else
             {
@@ -745,15 +770,16 @@ namespace Arcana
         if (progress.step == 6 && Near(outpost))
         {
             ++progress.step;
-            world.Log(
-                L"기사단 기록과 은빛 문장이 일치한다. 누군가 이 가문의 흔적을 추적하고 있다.");
+            world.Log(L"기사단 기록과 은빛 문장이 일치한다. 누군가 이 가문의 흔적을 추적하고 있다.",
+                      Lena::MessageKind::Quest);
             return;
         }
         if (progress.step == 2 && serdin && serdin->state.dead && Near(serdin->Position()))
         {
             ++progress.step;
             world.Log(
-                L"세르딘의 유품에서 브란에게 가는 편지를 찾았다. 죽은 동행자는 돌아오지 않는다.");
+                L"세르딘의 유품에서 브란에게 가는 편지를 찾았다. 죽은 동행자는 돌아오지 않는다.",
+                Lena::MessageKind::Item);
             return;
         }
         if (Near({world.lakeCenter.x - 6, world.lakeCenter.y}, 2) ||
@@ -784,7 +810,8 @@ namespace Arcana
                     p->state.absorbed = true;
                     ++progress.boarKills;
                     world.Log(L"잔류 마력 흡수: 최대 마력 +" + std::to_wstring(gain) +
-                              L". 현재 마력은 그대로다.");
+                                  L". 현재 마력은 그대로다.",
+                              Lena::MessageKind::Item);
                     Profiler::Count("arcana.mana_absorptions");
                 }
                 else
@@ -798,10 +825,15 @@ namespace Arcana
             {
                 return;
             }
-            world.Log(p->displayName + L": " + Lena::Label(p->state.action) + L" 중입니다.");
+            world.Log(p->displayName + L": " + Lena::Label(p->state.action) + L" 중입니다.",
+                      Lena::MessageKind::Dialogue);
             return;
         }
-        world.Log(Objective());
+        if (CallResident())
+        {
+            return;
+        }
+        world.Log(Objective(), Lena::MessageKind::Simulation);
     }
 
     void Module::Cast()
@@ -850,7 +882,8 @@ namespace Arcana
         {
             progress.combustion = true;
             ++progress.step;
-            world.Log(L"연소와 공기를 발견했다. 연료·산소 조건에서 화염 소모 마력이 줄었다.");
+            world.Log(L"연소와 공기를 발견했다. 연료·산소 조건에서 화염 소모 마력이 줄었다.",
+                      Lena::MessageKind::Quest);
         }
         else
         {
@@ -861,7 +894,7 @@ namespace Arcana
 
     bool Module::Enemy(const Lena::Person& p) const
     {
-        return p.GetId() != world.playerId && p.IsActive() && !p.state.dead &&
+        return p.GetId() != world.playerId && p.IsActive() && !p.state.dead && !p.indoors &&
                !p.state.surrendered && !p.state.detained &&
                (p.beast || p.role == Lena::Role::Bandit ||
                 (p.state.target == world.playerId &&
@@ -1053,6 +1086,19 @@ namespace Arcana
                 }
                 entry.settlementId = p->settlement >= 0 ? Villages()[p->settlement].id : "";
                 entry.metrics["physical_village"] = Location(p->Position());
+                entry.metrics["indoors"] = p->indoors ? 1 : 0;
+                entry.metrics["returning_home"] = p->returningHome ? 1 : 0;
+                entry.metrics["household"] = p->household;
+                entry.metrics["home_x"] = p->home.x;
+                entry.metrics["home_y"] = p->home.y;
+                if (p->indoors)
+                {
+                    entry.actionLabel += L" / 실내";
+                }
+                else if (p->returningHome)
+                {
+                    entry.actionLabel += L" / 귀가 중";
+                }
                 entry.metrics["courier"] = p->courier ? 1 : 0;
                 entry.metrics["travel_destination"] = p->state.travelTown;
                 entry.metrics["known_rumors"] = static_cast<double>(p->state.known.size());
@@ -1099,8 +1145,21 @@ namespace Arcana
         }
     }
 
-    bool Module::Read(std::istream& in, Progress& result, double minutes) const
+    bool Module::Read(std::istream& in, Progress& result, double minutes, bool legacyLayout) const
     {
+        auto restorePosition = [&](RenderPoint& position)
+        {
+            if (!std::isfinite(position.x) || !std::isfinite(position.y) ||
+                std::abs(position.x) > world.extent || std::abs(position.y) > world.extent)
+            {
+                return false;
+            }
+            if (legacyLayout && !world.Walkable(position))
+            {
+                position = world.Safe(position);
+            }
+            return world.Walkable(position);
+        };
         std::string tag;
         size_t count = 0;
         in >> tag >> result.step >> result.combustion >> result.dispatched >> result.boarKills >>
@@ -1109,7 +1168,7 @@ namespace Arcana
         if (!in || tag != "ARCANA_PROGRESS_2" || result.step < 0 || result.step > 7 ||
             result.combustion != (result.step >= 6) || result.boarKills > 1000000 ||
             !std::isfinite(result.disturbance) || result.disturbance < 0 ||
-            result.disturbance > 100 || !world.Walkable(result.dispatchPosition) ||
+            result.disturbance > 100 || !restorePosition(result.dispatchPosition) ||
             !std::isfinite(result.lastEconomy) || result.lastEconomy < 0 ||
             result.lastEconomy > minutes * 60)
         {
@@ -1151,7 +1210,7 @@ namespace Arcana
             in >> remnant.slot >> remnant.generation >> remnant.position.x >> remnant.position.y >>
                 remnant.minute >> remnant.mana;
             auto* p = world.Find(remnant.slot);
-            if (!in || !p || !p->beast || !world.Walkable(remnant.position) ||
+            if (!in || !p || !p->beast || !restorePosition(remnant.position) ||
                 !std::isfinite(remnant.minute) || remnant.minute < 0 || remnant.minute > minutes ||
                 !std::isfinite(remnant.mana) || remnant.mana < 0 || remnant.mana > 1e9 ||
                 remnant.generation > 1000000 ||

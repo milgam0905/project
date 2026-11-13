@@ -129,7 +129,8 @@ ARB_framebuffer_object 확장 지원이 필요하며, 초기화 실패 시 콘�
 - SimpleGame/SimpleGame.vcxproj: 새 소스 등록, 한국어 UTF-8 컴파일, OpenGL 링크.
 
 사용자가 Visual Studio에서 솔루션을 빌드하고 실행한다.
-기존 구성처럼 실행 파일 옆에 해당 아키텍처의 freeglut.dll과 glew32.dll이 필요하다.
+GLFW와 GLEW는 저장소에 포함된 소스로 정적 링크한다. 별도의 freeglut.dll 또는 glew32.dll 복사는 필요하지 않다.
+빌드 및 배포 안내는 docs/WINDOWS_BUILD.md를 참고한다.
 저장/불러오기, 전투, 장비·성장, 여러 청크의 스트리밍은 이번 좁은 시제품 범위 밖이다.
 퀘스트 진행과 소지품은 실행 중에 유지되며, 재시작이나 종료 시 초기화된다.
 

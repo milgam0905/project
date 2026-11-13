@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Third-party sources" />
     <Filter Include="소스 파일">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
@@ -21,6 +22,9 @@
     <ClCompile Include="ResourceSprites.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="ArcanaHousing.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
     <ClInclude Include="ResourceSprites.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -32,6 +36,75 @@
     <Text Include="..\PERFORMANCE_PROFILING.txt" />
     <Text Include="..\docs\LENA_START_MAP.md" />
     <Text Include="..\docs\ARCANA_INTEGRATION.md" />
+    <Text Include="..\docs\WINDOWS_BUILD.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\third_party\glfw\src\context.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\init.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\input.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\monitor.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\platform.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\vulkan.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\window.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\egl_context.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\osmesa_context.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\null_init.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\null_monitor.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\null_window.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\null_joystick.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\win32_module.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\win32_time.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\win32_thread.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\win32_init.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\win32_joystick.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\win32_monitor.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\win32_window.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glfw\src\wgl_context.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\third_party\glew\src\glew.c">
+      <Filter>Third-party sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">

@@ -186,8 +186,8 @@ function render()
                                      format(m.mood_grief)} · 적대 ${format(m.mood_hostility)}`));
             panel.append(
                 element("p",
-                        `현장 NPC ${format(m.npcs_present)} · 주민 정원 ${
-                            format(m.npc_capacity)} · 공유된 소문 ${
+                        `현장 NPC ${format(m.npcs_present)} (실내 ${format(m.npcs_indoors)}, 실외 ${format(m.npcs_outdoors)}) · 주민 정원 ${
+                            format(m.npc_capacity)} · 주택 ${format(m.house_count)}채 · 공유된 소문 ${
                             format(m.known_rumors)} · 최근 사건 ${format(m.recent_incidents)}`,
                         "muted"));
         }

@@ -8,6 +8,7 @@
 #include <Windows.h>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 
 bool Lena::World::SelfTest()
 {
@@ -158,7 +159,81 @@ bool Lena::World::ArcanaSelfTest()
         failed += condition ? 0 : 1;
     };
     World world(true);
+    check(world.houses.size() == Arcana::Villages().size() * Arcana::HousesPerVillage,
+          "twenty_houses_per_village");
+    std::set<int> occupiedHomes;
+    bool accessibleHomes = true;
+    for (auto id : world.people)
+    {
+        const auto* p = world.Find(id);
+        if (p->species == Species::Human && p->role != Role::Player)
+        {
+            accessibleHomes = accessibleHomes && p->household >= 0 &&
+                              p->household / Arcana::HousesPerVillage == p->settlement &&
+                              world.Walkable(p->home) && occupiedHomes.insert(p->household).second;
+        }
+    }
+    check(accessibleHomes && occupiedHomes.size() == 100, "unique_connected_resident_doorways");
+    world.messages.clear();
+    world.Log(L"simulation", MessageKind::Simulation);
+    check(world.messages.empty(), "simulation_messages_do_not_cover_gameplay");
+    world.Log(L"dialogue", MessageKind::Dialogue);
+    const auto messageCreated = world.messages.front().created;
+    world.Log(L"dialogue", MessageKind::Dialogue);
+    check(world.messages.size() == 1 && world.messages.front().created == messageCreated,
+          "duplicate_message_does_not_extend_lifetime");
+    world.ExpireMessages(messageCreated + std::chrono::milliseconds(4999));
+    check(world.messages.size() == 1, "notification_survives_until_five_seconds");
+    world.ExpireMessages(messageCreated + std::chrono::seconds(5));
+    check(world.messages.empty(), "notification_expires_at_five_seconds");
+    world.Log(L"first", MessageKind::Item);
+    world.Log(L"second", MessageKind::Quest);
+    world.Log(L"third", MessageKind::Dialogue);
+    world.Log(L"fourth", MessageKind::Notice);
+    check(world.messages.size() == 3 && world.messages.front().text == L"second",
+          "notification_queue_keeps_latest_three");
+    world.messages.clear();
     const auto originalPosition = world.Player().Position();
+    Person* housingResident = nullptr;
+    for (auto id : world.people)
+    {
+        auto* p = world.Find(id);
+        if (p->role == Role::Resident && p->settlement == 0 && p->household >= 0 &&
+            p->key.compare(0, 7, "arcana:") == 0)
+        {
+            housingResident = p;
+            break;
+        }
+    }
+    if (!housingResident)
+    {
+        check(false, "housing_test_resident_exists");
+        return false;
+    }
+    const auto beforeHousing = housingResident->state;
+    const auto beforeHousingPosition = housingResident->Position();
+    world.SetAction(*housingResident, Action::Idle);
+    housingResident->SetPosition(housingResident->home);
+    housingResident->state.threatSeconds = 0;
+    world.arcana->ManageHousing(*housingResident, 1.f / 60);
+    check(housingResident->indoors && !housingResident->IsVisible() && housingResident->IsActive(),
+          "idle_resident_enters_home_without_disabling_ai");
+    world.RebuildIndex();
+    const auto outdoors = world.Nearby(housingResident->home, 2);
+    check(std::find(outdoors.begin(), outdoors.end(), housingResident->GetId()) == outdoors.end(),
+          "indoor_resident_excluded_from_outdoor_interactions");
+    const float indoorHealth = housingResident->state.health;
+    world.Damage(world.Player(), *housingResident, 10);
+    check(housingResident->state.health == indoorHealth, "cannot_attack_resident_through_house");
+    world.Player().SetPosition(housingResident->home);
+    check(world.arcana->CallResident() && !housingResident->indoors && housingResident->IsVisible(),
+          "door_interaction_calls_resident_outside");
+    housingResident->outdoorVisitSeconds = 0;
+    housingResident->state = beforeHousing;
+    housingResident->SetPosition(beforeHousingPosition);
+    housingResident->returningHome = false;
+    world.Player().SetPosition(originalPosition);
+    world.RebuildIndex();
     for (float dt : {1.f / 60, 1.f / 120})
     {
         for (RenderPoint input : {RenderPoint{-1, 0},
@@ -367,9 +442,17 @@ bool Lena::World::ArcanaSelfTest()
         check(false, "temporary_save_path");
         return false;
     }
+    world.SetAction(*housingResident, Action::Idle);
+    housingResident->state.threatSeconds = 0;
+    housingResident->SetPosition(housingResident->home);
+    world.arcana->ManageHousing(*housingResident, 1.f / 60);
     check(world.Save(file), "save_arcana_snapshot");
     World restored(true);
     check(restored.Load(file), "restore_arcana_snapshot");
+    const auto* indoorResident = restored.Find(housingResident->GetId());
+    check(indoorResident && indoorResident->indoors && !indoorResident->IsVisible() &&
+              indoorResident->IsActive(),
+          "restore_indoor_resident_state");
     check(restored.arcana->State().step == 7 && restored.arcana->State().boarKills == 1 &&
               restored.Player().state.manaMax == grown,
           "restore_quests_growth_and_deaths");
@@ -385,6 +468,46 @@ bool Lena::World::ArcanaSelfTest()
     }
     World legacy;
     check(!legacy.Load(file), "legacy_save_isolation");
+
+    // Simulate a v2 occupant on land now covered by a new house and an old shared doorway.
+    const auto playerPosition = world.Player().Position();
+    world.Player().SetPosition(world.houses[6]);
+    const auto oldDoor = world.houses[0];
+    housingResident->SetPosition(world.Safe({oldDoor.x, oldDoor.y + 1.8f}));
+    check(world.Save(file), "write_old_layout_fixture");
+    world.Player().SetPosition(playerPosition);
+    housingResident->SetPosition(housingResident->home);
+    const auto unchangedPosition = restored.Player().Position();
+    check(!restored.Load(file) && Distance(restored.Player().Position(), unchangedPosition) < .001f,
+          "v3_rejects_blocked_position_atomically");
+    std::string snapshot;
+    {
+        std::ifstream input(file, std::ios::binary);
+        snapshot.assign(std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>());
+    }
+    snapshot.replace(0, std::string("ARCANA_SAVE_3").size(), "ARCANA_SAVE_2");
+    {
+        std::ofstream output(file, std::ios::binary | std::ios::trunc);
+        output << snapshot;
+    }
+    check(restored.Load(file) && restored.Walkable(restored.Player().Position()) &&
+              restored.Find(housingResident->GetId())->indoors &&
+              Distance(restored.Find(housingResident->GetId())->Position(), housingResident->home) <
+                  .001f &&
+              restored.Find(resident->GetId())->state.dead && restored.arcana->State().step == 7,
+          "v2_layout_migration_preserves_indoor_death_and_quest_state");
+    const auto housingTag = snapshot.find("ARCANA_HOUSING_1");
+    if (housingTag != std::string::npos)
+    {
+        snapshot.erase(housingTag);
+        {
+            std::ofstream output(file, std::ios::binary | std::ios::trunc);
+            output << snapshot;
+        }
+        check(restored.Load(file) && !restored.Find(housingResident->GetId())->indoors &&
+                  restored.Find(resident->GetId())->state.dead,
+              "v2_without_housing_extension_remains_readable");
+    }
     DeleteFileW(file);
     DeleteFileW((std::wstring(file) + L".tmp").c_str());
     std::cout << "[ArcanaCheck] failures=" << failed << '\n';

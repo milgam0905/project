@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <chrono>
 
 namespace Arcana
 {
@@ -113,6 +114,9 @@ namespace Lena
         bool beast = false;
         std::string profile, speciesId, region;
         bool courier = false;
+        bool indoors = false, returningHome = false;
+        float outdoorVisitSeconds = 0;
+        int household = -1;
     };
 
     struct Fact
@@ -131,6 +135,23 @@ namespace Lena
         double pollution = 22, plants = 700, production = 0, consumption = 0;
     };
 
+    enum class MessageKind
+    {
+        Notice,
+        Dialogue,
+        Item,
+        Quest,
+        Simulation
+    };
+
+    struct Message
+    {
+        using Clock = std::chrono::steady_clock;
+        std::wstring text;
+        MessageKind kind;
+        Clock::time_point created;
+    };
+
     class World
     {
       public:
@@ -143,7 +164,7 @@ namespace Lena
         std::vector<Actor::Id> people;
         std::vector<RenderPoint> houses, trees;
         std::vector<Fact> facts;
-        std::deque<std::wstring> messages;
+        std::deque<Message> messages;
         Town town;
         double minutes = 0;
         std::uint64_t epoch = 0, tick = 0, factSequence = 0;
@@ -171,7 +192,8 @@ namespace Lena
         void PlayerAttack();
         void Interact();
         void Choose(int choice);
-        void Log(const std::wstring& text);
+        void Log(const std::wstring& text, MessageKind kind = MessageKind::Notice);
+        void ExpireMessages(Message::Clock::time_point now = Message::Clock::now());
         WorldMonitor::Snapshot Capture(bool paused,
                                        size_t begin = 0,
                                        size_t count = static_cast<size_t>(-1),

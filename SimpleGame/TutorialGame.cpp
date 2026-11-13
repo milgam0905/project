@@ -2,7 +2,7 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#include "Dependencies/glew.h"
+#include <GL/glew.h>
 #include <Windows.h>
 #include "TutorialGame.h"
 #include "UiText.h"

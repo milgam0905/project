@@ -12,8 +12,11 @@ but WITHOUT ANY WARRANTY.
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#include "Dependencies/glew.h"
-#include "Dependencies/freeglut.h"
+#include <GL/glew.h>
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
 #include "TutorialGame.h"
 #include "LevelOneGame.h"
 #include "LenaGame.h"
@@ -36,11 +39,12 @@ namespace
     bool profiling = true;
     bool monitoring = true;
     std::string monitorWorld;
-    int previousTick = 0;
+    constexpr double UpdateInterval = .016;
     double simulationDebt = 0;
-    HWND gameWindow = nullptr;
+    bool drawable = false, redrawRequested = true;
+    bool spaceDown = false, mouseDown = false;
 
-    void RenderScene()
+    void RenderScene(GLFWwindow* window)
     {
         if (!game)
         {
@@ -56,33 +60,20 @@ namespace
         }
         {
             Profiler::Scope swap("render.swap_wait");
-            glutSwapBuffers();
+            glfwSwapBuffers(window);
         }
         RenderStats::EndFrame();
     }
 
-    void Tick(int)
+    void Tick(double dt)
     {
-        if (!game)
-        {
-            return;
-        }
-
-        int now = glutGet(GLUT_ELAPSED_TIME);
-        float dt = (now - previousTick) / 1000.f;
-        previousTick = now;
-        if (GetForegroundWindow() != gameWindow)
-        {
-            game->ClearKeys();
-        }
-
         Profiler::Gauge("loop.update_dt_ms", dt * 1000.0);
-        Profiler::Gauge("loop.requested_timer_ms", 16);
+        Profiler::Gauge("loop.requested_timer_ms", UpdateInterval * 1000.0);
         {
             Profiler::Scope profile("game.update");
             Profiler::Count("game.update_calls");
             // Preserve normal slow-frame time; bounded fixed steps avoid collision tunnelling.
-            simulationDebt += std::max(0.0, static_cast<double>(dt));
+            simulationDebt += std::max(0.0, dt);
             if (simulationDebt > 2.0)
             {
                 Profiler::Count("loop.long_gap_clamps");
@@ -105,64 +96,145 @@ namespace
         {
             WorldMonitor::Publish(game->CaptureMonitor());
         }
-        if (game->WantsQuit())
-        {
-            glutLeaveMainLoop();
-            return;
-        }
-
-        glutPostRedisplay();
-        glutTimerFunc(16, Tick, 0);
     }
 
-    void Resize(int w, int h)
+    void Resize(GLFWwindow*, int width, int height)
     {
-        if (game)
+        drawable = width > 0 && height > 0;
+        if (game && drawable)
         {
-            game->Resize(w, h);
+            game->Resize(width, height);
+            redrawRequested = true;
         }
     }
 
-    void KeyDown(unsigned char key, int, int)
+    void Refresh(GLFWwindow*)
     {
-        if (game)
+        redrawRequested = true;
+    }
+
+    void Focus(GLFWwindow*, int focused)
+    {
+        if (!focused && game)
+        {
+            spaceDown = mouseDown = false;
+            game->ClearKeys();
+        }
+    }
+
+    void SetAttack(bool& source, bool down)
+    {
+        const bool wasDown = spaceDown || mouseDown;
+        source = down;
+        const bool isDown = spaceDown || mouseDown;
+        if (isDown && !wasDown)
         {
             Profiler::Scope profile("input.key_down");
-            game->KeyDown(key);
+            game->KeyDown(' ');
         }
-    }
-
-    void KeyUp(unsigned char key, int, int)
-    {
-        if (game)
+        else if (!isDown && wasDown)
         {
-            game->KeyUp(key);
+            game->KeyUp(' ');
         }
     }
 
-    void MouseInput(int button, int state, int, int)
+    void KeyInput(GLFWwindow*, int key, int, int action, int modifiers)
     {
-        if (!game || tutorialMode || button != GLUT_LEFT_BUTTON)
+        if (!game || action == GLFW_REPEAT ||
+            (action == GLFW_PRESS &&
+             (modifiers & (GLFW_MOD_CONTROL | GLFW_MOD_ALT | GLFW_MOD_SUPER))))
         {
             return;
         }
-        if (state == GLUT_DOWN)
+        if (key == GLFW_KEY_SPACE)
         {
-            game->KeyDown(' ');
+            SetAttack(spaceDown, action == GLFW_PRESS);
+            return;
+        }
+        int code = 0;
+        if (key >= GLFW_KEY_A && key <= GLFW_KEY_Z)
+        {
+            code = 'a' + key - GLFW_KEY_A;
+        }
+        else if (key >= GLFW_KEY_0 && key <= GLFW_KEY_9)
+        {
+            code = '0' + key - GLFW_KEY_0;
+        }
+        else if (key >= GLFW_KEY_KP_0 && key <= GLFW_KEY_KP_9)
+        {
+            code = '0' + key - GLFW_KEY_KP_0;
+        }
+        else if (key == GLFW_KEY_ESCAPE)
+        {
+            code = 27;
+        }
+        if (!code)
+        {
+            return;
+        }
+        if (action == GLFW_PRESS)
+        {
+            Profiler::Scope profile("input.key_down");
+            game->KeyDown(static_cast<unsigned char>(code));
         }
         else
         {
-            game->KeyUp(' ');
+            game->KeyUp(static_cast<unsigned char>(code));
+        }
+    }
+
+    void MouseInput(GLFWwindow*, int button, int action, int)
+    {
+        if (game && !tutorialMode && button == GLFW_MOUSE_BUTTON_LEFT)
+        {
+            SetAttack(mouseDown, action == GLFW_PRESS);
+        }
+    }
+
+    void RunLoop(GLFWwindow* window)
+    {
+        double previousTick = glfwGetTime();
+        double nextTick = previousTick + UpdateInterval;
+        while (!glfwWindowShouldClose(window))
+        {
+            const double remaining = nextTick - glfwGetTime();
+            if (remaining > 0 && !redrawRequested)
+            {
+                Profiler::Scope wait("loop.event_wait");
+                glfwWaitEventsTimeout(remaining);
+            }
+            else
+            {
+                glfwPollEvents();
+            }
+            if (glfwWindowShouldClose(window) || game->WantsQuit())
+            {
+                break;
+            }
+            const double now = glfwGetTime();
+            if (now >= nextTick)
+            {
+                Tick(now - previousTick);
+                previousTick = now;
+                // The old timer scheduled its next wake after the update completed.
+                nextTick = glfwGetTime() + UpdateInterval;
+                redrawRequested = true;
+            }
+            if (game->WantsQuit())
+            {
+                break;
+            }
+            if (drawable && redrawRequested)
+            {
+                RenderScene(window);
+            }
+            redrawRequested = false;
         }
     }
 
     // Release GPU/font resources while the window's OpenGL context is still alive.
     void Close()
     {
-        if (!game)
-        {
-            return;
-        }
         {
             Profiler::Scope profile("lifecycle.shutdown");
             WorldMonitor::Stop();
@@ -170,6 +242,11 @@ namespace
             RenderQueue::Shutdown();
         }
         Profiler::Shutdown();
+    }
+
+    void WindowError(int code, const char* description)
+    {
+        std::cerr << "[GLFW] " << code << ": " << description << '\n';
     }
 } // namespace
 
@@ -196,7 +273,7 @@ int main(int argc, char** argv)
         }
     }
 
-    // Strip the game-specific option before passing arguments to FreeGLUT.
+    // GLFW does not parse argv; retain the game's existing launch options.
     for (int i = 1; i < argc;)
     {
         if (std::strcmp(argv[i], "--tutorial") == 0 || std::strcmp(argv[i], "--village") == 0 ||
@@ -250,29 +327,37 @@ int main(int argc, char** argv)
             {
                 profiling = false;
             }
-            for (int j = i; j < argc; ++j)
-            {
-                argv[j] = argv[j + 1];
-            }
-            --argc;
         }
-        else
-        {
-            ++i;
-        }
+        ++i;
     }
 
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
+    glfwSetErrorCallback(WindowError);
+    if (!glfwInit())
+    {
+        return 1;
+    }
     // Renderer uses compatibility drawing plus optional framebuffer post-processing.
-    glutInitContextVersion(2, 1);
-    glutInitWindowSize(1280, 800);
-    glutCreateWindow("ARCANA");
-    glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
+    glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
+    glfwWindowHint(GLFW_ALPHA_BITS, 8);
+    glfwWindowHint(GLFW_DEPTH_BITS, 0);
+    glfwWindowHint(GLFW_STENCIL_BITS, 0);
+    GLFWwindow* window =
+        glfwCreateWindow(1280, 800, u8"\uC544\uB974\uCE74\uB098 : ARCANA", nullptr, nullptr);
+    if (!window)
+    {
+        glfwTerminate();
+        return 1;
+    }
+    glfwMakeContextCurrent(window);
+    // Preserve the driver/default swap interval rather than forcing a new VSync policy.
     if (glewInit() != GLEW_OK || !GLEW_VERSION_2_1)
     {
         std::cerr << "OpenGL 2.1 compatibility support is required.\n";
-        glutDestroyWindow(glutGetWindow());
+        glfwDestroyWindow(window);
+        glfwTerminate();
         return 1;
     }
 
@@ -281,8 +366,6 @@ int main(int argc, char** argv)
                          : lenaMode     ? "lena"
                          : tutorialMode ? "tutorial"
                                         : "level_one");
-    gameWindow = WindowFromDC(wglGetCurrentDC());
-    SetWindowTextW(gameWindow, L"\uc544\ub974\uce74\ub098 : ARCANA");
     try
     {
         if (lenaMode)
@@ -301,9 +384,13 @@ int main(int argc, char** argv)
     catch (const std::exception& error)
     {
         std::cerr << "[ARCANA] Initialization failed: " << error.what() << '\n';
-        MessageBoxA(gameWindow, error.what(), "ARCANA - Content error", MB_OK | MB_ICONERROR);
-        Profiler::Shutdown();
-        glutDestroyWindow(glutGetWindow());
+        MessageBoxA(glfwGetWin32Window(window),
+                    error.what(),
+                    "ARCANA - Content error",
+                    MB_OK | MB_ICONERROR);
+        Close();
+        glfwDestroyWindow(window);
+        glfwTerminate();
         return 1;
     }
     if (monitoring)
@@ -323,20 +410,17 @@ int main(int argc, char** argv)
             std::cerr << "[Monitor] Disabled: " << error.what() << '\n';
         }
     }
-    glutDisplayFunc(RenderScene);
-    glutReshapeFunc(Resize);
-    glutKeyboardFunc(KeyDown);
-    glutKeyboardUpFunc(KeyUp);
-    glutMouseFunc(MouseInput);
-    glutCloseFunc(Close);
-    glutIgnoreKeyRepeat(1);
-    game->Resize(1280, 800);
-    previousTick = glutGet(GLUT_ELAPSED_TIME);
-    glutTimerFunc(16, Tick, 0);
-    glutMainLoop();
-    if (game && wglGetCurrentContext())
-    {
-        Close();
-    }
+    glfwSetFramebufferSizeCallback(window, Resize);
+    glfwSetWindowRefreshCallback(window, Refresh);
+    glfwSetWindowFocusCallback(window, Focus);
+    glfwSetKeyCallback(window, KeyInput);
+    glfwSetMouseButtonCallback(window, MouseInput);
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(window, &width, &height);
+    Resize(window, width, height);
+    RunLoop(window);
+    Close();
+    glfwDestroyWindow(window);
+    glfwTerminate();
     return 0;
 }

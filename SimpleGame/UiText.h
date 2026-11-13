@@ -2,7 +2,7 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#include "Dependencies/glew.h"
+#include <GL/glew.h>
 #include <Windows.h>
 #include "Renderer.h"
 #include "RenderQueue.h"
@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <filesystem>
 #include <map>
 #include <string>
 #include <vector>
@@ -18,6 +19,8 @@
 class UiText
 {
     static constexpr int Cell = 32;
+    static constexpr int FontHeight = 23;
+    static constexpr int OutlineRadius = 1;
 
     struct Glyph
     {
@@ -27,6 +30,7 @@ class UiText
 
     HDC dc = nullptr;
     HFONT font = nullptr;
+    std::wstring privateFontPath;
     HBITMAP bitmap = nullptr;
     HGDIOBJ oldFont = nullptr, oldBitmap = nullptr;
     void* pixels = nullptr;
@@ -34,6 +38,71 @@ class UiText
     int side = 0, columns = 0, capacity = 0;
     std::uint64_t clock = 0;
     std::map<wchar_t, Glyph> glyphs;
+
+    static HFONT CreateUiFont(const wchar_t* face)
+    {
+        return CreateFontW(-FontHeight,
+                           0,
+                           0,
+                           0,
+                           FW_NORMAL,
+                           FALSE,
+                           FALSE,
+                           FALSE,
+                           DEFAULT_CHARSET,
+                           OUT_DEFAULT_PRECIS,
+                           CLIP_DEFAULT_PRECIS,
+                           ANTIALIASED_QUALITY,
+                           DEFAULT_PITCH,
+                           face);
+    }
+
+    bool HasKoreanGlyphs() const
+    {
+        constexpr wchar_t sample[] = L"\uD55C\uAE00";
+        WORD indices[2]{};
+        return GetGlyphIndicesW(dc, sample, 2, indices, GGI_MARK_NONEXISTING_GLYPHS) != GDI_ERROR &&
+               indices[0] != 0xffff && indices[1] != 0xffff;
+    }
+
+    void SelectKoreanFallback()
+    {
+        if (HasKoreanGlyphs())
+        {
+            return;
+        }
+        Profiler::Scope scope("text.fallback_font_initialize");
+        wchar_t executable[32768]{};
+        const DWORD length = GetModuleFileNameW(nullptr, executable, 32768);
+        if (length == 0 || length >= 32768)
+        {
+            Profiler::Count("text.fallback_font_failures");
+            return;
+        }
+        const auto path = std::filesystem::path(executable).parent_path() / L"assets" / L"fonts" /
+                          L"NotoSansCJKkr-Regular.otf";
+        if (AddFontResourceExW(path.c_str(), FR_PRIVATE, nullptr) == 0)
+        {
+            Profiler::Count("text.fallback_font_failures");
+            return;
+        }
+        HFONT fallback = CreateUiFont(L"Noto Sans CJK KR");
+        if (fallback && SelectObject(dc, fallback) && HasKoreanGlyphs())
+        {
+            DeleteObject(font);
+            font = fallback;
+            privateFontPath = path.native();
+            Profiler::Count("text.fallback_fonts_loaded");
+            return;
+        }
+        if (fallback)
+        {
+            SelectObject(dc, font);
+            DeleteObject(fallback);
+        }
+        RemoveFontResourceExW(path.c_str(), FR_PRIVATE, nullptr);
+        Profiler::Count("text.fallback_font_failures");
+    }
 
     const Glyph* GetGlyph(wchar_t character)
     {
@@ -81,8 +150,27 @@ class UiText
         const auto* source = static_cast<const unsigned char*>(pixels);
         for (int i = 0; i < Cell * Cell; ++i)
         {
-            rgba[i * 4] = rgba[i * 4 + 1] = rgba[i * 4 + 2] = 255;
-            rgba[i * 4 + 3] = source[i * 4];
+            const int x = i % Cell, y = i / Cell;
+            const unsigned fill = source[i * 4];
+            unsigned coverage = fill;
+            for (int dy = -OutlineRadius; dy <= OutlineRadius; ++dy)
+            {
+                for (int dx = -OutlineRadius; dx <= OutlineRadius; ++dx)
+                {
+                    const int sx = x + dx, sy = y + dy;
+                    if (sx >= 0 && sx < Cell && sy >= 0 && sy < Cell)
+                    {
+                        coverage =
+                            std::max(coverage, static_cast<unsigned>(source[(sy * Cell + sx) * 4]));
+                    }
+                }
+            }
+            // Straight alpha: the tinted fill and black outline share a single queued quad.
+            // RGB * alpha recovers fill coverage; only the expanded edge remains black.
+            const auto shade =
+                static_cast<unsigned char>(coverage ? (fill * 255 + coverage / 2) / coverage : 0);
+            rgba[i * 4] = rgba[i * 4 + 1] = rgba[i * 4 + 2] = shade;
+            rgba[i * 4 + 3] = static_cast<unsigned char>(coverage);
         }
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, atlas);
@@ -96,6 +184,7 @@ class UiText
                         GL_UNSIGNED_BYTE,
                         rgba.data());
         Profiler::Count("upload.texture_bytes", rgba.size());
+        Profiler::Count("text.outlined_glyph_uploads");
         Profiler::Gauge("text.glyph_resident", static_cast<double>(glyphs.size() + 1));
         return &glyphs.emplace(character, Glyph{slot, size.cx, ++clock}).first->second;
     }
@@ -105,26 +194,19 @@ class UiText
     {
         Profiler::Scope profile("text.atlas_initialize");
         dc = CreateCompatibleDC(nullptr);
-        font = CreateFontW(-21,
-                           0,
-                           0,
-                           0,
-                           FW_NORMAL,
-                           FALSE,
-                           FALSE,
-                           FALSE,
-                           DEFAULT_CHARSET,
-                           OUT_DEFAULT_PRECIS,
-                           CLIP_DEFAULT_PRECIS,
-                           ANTIALIASED_QUALITY,
-                           DEFAULT_PITCH,
-                           L"Malgun Gothic");
+        font = CreateUiFont(L"Malgun Gothic");
         if (!dc || !font)
         {
             Profiler::Count("text.initialize_failures");
             return;
         }
         oldFont = SelectObject(dc, font);
+        if (!oldFont)
+        {
+            Profiler::Count("text.initialize_failures");
+            return;
+        }
+        SelectKoreanFallback();
         BITMAPINFO info = {};
         info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
         info.bmiHeader.biWidth = Cell;
@@ -167,6 +249,8 @@ class UiText
                      transparent.data());
         Profiler::Count("upload.texture_bytes", transparent.size());
         Profiler::Gauge("text.atlas_bytes", static_cast<double>(transparent.size()));
+        Profiler::Gauge("text.font_height_source_px", FontHeight);
+        Profiler::Gauge("text.outline_radius_source_px", OutlineRadius);
     }
 
     UiText(const UiText&) = delete;
@@ -191,6 +275,10 @@ class UiText
         if (font)
         {
             DeleteObject(font);
+        }
+        if (!privateFontPath.empty())
+        {
+            RemoveFontResourceExW(privateFontPath.c_str(), FR_PRIVATE, nullptr);
         }
         if (dc)
         {

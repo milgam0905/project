@@ -8,6 +8,8 @@
 namespace Arcana
 {
     constexpr float BasicAttackDamage = 60.f;
+    constexpr int HousesPerVillage = 20;
+    constexpr float VillageRadius = 20.f;
 
     struct Village
     {
@@ -17,6 +19,7 @@ namespace Arcana
     };
 
     const std::array<Village, 5>& Villages();
+    void BuildVillageHouses(Lena::World& world);
 
     struct Remnant
     {
@@ -61,7 +64,10 @@ namespace Arcana
         void Enrich(WorldMonitor::Snapshot& snapshot, bool statistics = true) const;
         std::wstring Objective() const;
         void Write(std::ostream& out) const;
-        bool Read(std::istream& in, Progress& result, double minutes) const;
+        bool Read(std::istream& in,
+                  Progress& result,
+                  double minutes,
+                  bool legacyLayout = false) const;
         void Restore(Progress progress);
         const Progress& State() const;
         const RenderPoint forge{-4, 5};
@@ -69,10 +75,12 @@ namespace Arcana
         const RenderPoint territory{18, 16};
         Lena::Town& Town(int village);
         const Lena::Town& Town(int village) const;
-        int Location(RenderPoint point, float radius = 9) const;
+        int Location(RenderPoint point, float radius = VillageRadius) const;
         Lena::Person* LocalGuard(const Lena::Person& reporter) const;
         RenderPoint DrinkingPoint(const Lena::Person& person) const;
         void Share(Lena::Person& source, Lena::Person& target);
+        bool ManageHousing(Lena::Person& person, float dt);
+        bool CallResident();
 
       private:
         Lena::World& world;
@@ -99,5 +107,8 @@ namespace Arcana
         bool Respawn(Lena::Person& person);
         void ShowRemnant(Remnant& remnant);
         bool AbsorbRemnant();
+        void AssignHomes();
+        bool WorkDue(const Lena::Person& person) const;
+        bool WantsHome(const Lena::Person& person) const;
     };
 } // namespace Arcana

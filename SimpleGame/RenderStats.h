@@ -3,7 +3,7 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#include "Dependencies/glew.h"
+#include <GL/glew.h>
 #include <cstdint>
 
 // Render-thread-only instrumentation. Counts API submissions, not GPU driver batches.

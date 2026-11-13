@@ -61,8 +61,8 @@ namespace Arcana
         for (auto id : world.people)
         {
             auto* p = world.Find(id);
-            if (!p || p->state.dead || !p->IsActive() || p->role != Lena::Role::Guard ||
-                p->settlement != village)
+            if (!p || p->state.dead || p->indoors || !p->IsActive() ||
+                p->role != Lena::Role::Guard || p->settlement != village)
             {
                 continue;
             }
@@ -105,8 +105,8 @@ namespace Arcana
                                              {
                                                  return Lena::Distance(p, other) < .6f;
                                              });
-                if (!duplicate && Location(p, 14) < 0 && Lena::Distance(p, world.canal) > 26 &&
-                    world.Walkable(p))
+                if (!duplicate && Location(p, VillageRadius) < 0 &&
+                    Lena::Distance(p, world.canal) > 26 && world.Walkable(p))
                 {
                     monsterSpawns.push_back(p);
                 }
@@ -179,7 +179,7 @@ namespace Arcana
     void Module::Share(Lena::Person& source, Lena::Person& target)
     {
         Profiler::Scope scope("arcana.rumor_contact");
-        if (source.state.dead || target.state.dead ||
+        if (source.state.dead || target.state.dead || source.indoors || target.indoors ||
             Lena::Distance(source.Position(), target.Position()) >= 1.4f ||
             !world.Visible(source.Position(), target.Position()))
         {
@@ -204,7 +204,7 @@ namespace Arcana
     void Module::UpdateExpansion(float dt)
     {
         Profiler::Scope scope("arcana.expansion_update");
-        int monsters = 0, carriers = 0;
+        int monsters = 0, carriers = 0, indoorCount = 0, returningCount = 0;
         bool indexChanged = false;
         auto& remnants = progress.remnants;
         for (auto it = remnants.begin(); it != remnants.end();)
@@ -237,6 +237,8 @@ namespace Arcana
                 }
                 monsters += !p->state.dead;
             }
+            indoorCount += !p->state.dead && p->indoors;
+            returningCount += !p->state.dead && p->returningHome;
             if (!p->courier || p->state.dead || p->state.detained || p->state.surrendered)
             {
                 continue;
@@ -266,6 +268,8 @@ namespace Arcana
             progress.lastEconomy = world.minutes * 60;
         }
         Profiler::Gauge("arcana.monsters_alive", monsters);
+        Profiler::Gauge("housing.indoors_count", indoorCount);
+        Profiler::Gauge("housing.returning_count", returningCount);
         Profiler::Gauge("arcana.couriers_alive", carriers);
     }
 
@@ -309,7 +313,8 @@ namespace Arcana
                     world.scene.Destroy(*actor);
                 }
                 remnants.erase(it);
-                world.Log(L"남겨진 잔류 마력 흡수: 최대 마력 +" + std::to_wstring(gain));
+                world.Log(L"남겨진 잔류 마력 흡수: 최대 마력 +" + std::to_wstring(gain),
+                          Lena::MessageKind::Item);
                 Profiler::Count("arcana.mana_absorptions");
                 return true;
             }
@@ -370,7 +375,7 @@ namespace Arcana
             entry.id = Villages()[v].id;
             entry.name = Villages()[v].name;
             const auto& town = Town(v);
-            int count = 0, present = 0, dead = 0;
+            int count = 0, present = 0, dead = 0, indoors = 0;
             double fear = 0, grief = 0, anger = 0, hunger = 0;
             std::set<std::uint64_t> known;
             for (auto id : world.people)
@@ -394,6 +399,7 @@ namespace Arcana
                 if (!p->state.dead && Location(p->Position()) == v)
                 {
                     ++present;
+                    indoors += p->indoors;
                     fear += p->state.fear;
                     grief += p->state.grief;
                     anger += p->state.anger;
@@ -416,7 +422,10 @@ namespace Arcana
                         : 0;
             entry.metrics.insert({{"population", count},
                                   {"npc_capacity", 20},
+                                  {"house_count", HousesPerVillage},
                                   {"npcs_present", present},
+                                  {"npcs_indoors", indoors},
+                                  {"npcs_outdoors", present - indoors},
                                   {"resident_deaths", dead},
                                   {"food_stock", town.food},
                                   {"treasury", town.treasury},
